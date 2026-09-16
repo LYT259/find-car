@@ -1,0 +1,7 @@
+name = "find-dkc"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "public"
+
+[[kv_namespaces]]
+binding = "FIND_CAR_KV"
+id = "5c0c464b9e564766a238fa541beba3ff"

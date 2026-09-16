@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="zh" data-theme="dark" data-ui="apple">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<!-- 图标：与 DD / DC 完全同一张 200x200 PNG（helmet logo，三处文件 md5 一致）。
+     带版本参数是为了强制浏览器重新抓取——Chrome 会长期缓存 favicon 的旧图或 404，
+     硬刷新（Ctrl+Shift+R）也不一定重新请求 /favicon.png。 -->
+<link rel="icon" type="image/png" sizes="any" href="/favicon.png?v=2">
+<link rel="shortcut icon" href="/favicon.png?v=2">
+<link rel="apple-touch-icon" href="/favicon.png?v=2">
+<title>Find Donkey Car</title>
+<script>
+  // 首屏防闪烁：与 DD（index.html 内联脚本）和 DC（WebConsoleAssets.h）同款逻辑——
+  // 渲染前按系统深浅色偏好解析一次、不读任何存储，因此每次进入/刷新都重新跟随系统。
+  // 手动切换只在本次页面视图内生效（内存态，不持久化）；matchMedia 不可用时回退深色。
+  // 界面风格（cockpit / apple）读 localStorage['findcar.ui.style']，缺省与读取失败都回退 apple。
+  (function () {
+    try {
+      var m = typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-color-scheme: light)')
+        : null;
+      document.documentElement.dataset.theme = (m && m.matches) ? 'light' : 'dark';
+    } catch (e) { /* 保持默认深色 */ }
+    try {
+      var ui = window.localStorage.getItem('findcar.ui.style');
+      document.documentElement.dataset.ui = (ui === 'cockpit' || ui === 'apple') ? ui : 'apple';
+    } catch (e) {
+      document.documentElement.dataset.ui = 'apple';
+    }
+  })();
+</script>
+<style>
+  /* ------------------------------------------------------------------
+   * 『座舱』象限（data-ui="cockpit"）：设计语言与 DonkeyDrifter（DD）的
+   * theme-mus4 / theme-light 皮肤、Drifter Console（DC）的 WebConsoleAssets.h
+   * 逐值对齐（:root 与 html[data-theme="light"] 两个变量块为座舱基准，保持不动）：
+   *   深色：页面 #101318、面板 #171c24、内层 #111820、描边 #2b3441/#344154、
+   *         文字 #e8edf2 / #b7c6d8 / #8fa1b5 / #6b7d90
+   *   浅色：页面 #eef1f5、面板 #fff、内层 #f4f6f9、描边 #d5dce4/#ccd5df、
+   *         文字 #1a2330 / #3f4f63 / #5b6b7d
+   *   标志色：FILL 实色蓝 #5cc8ff + 近黑字 #061019（hover #8bdcff）；
+   *          FRAME 状态色 绿 #39d98a（浅色 #1fae6b）= 正常/在线、
+   *          琥珀 #ffcc66（#b57d0e）= 过渡/警告、红 #ff6b6b（#e5484d）= 危险、
+   *          灰 #475569（#94a3b8）= 关闭/离线；浅色正文蓝用固件浅色版 #0c9bd6。
+   *   形状：面板 10px 圆角 + 1px 细框 + 135deg 渐变；控件一律 9999px 胶囊；
+   *          微标签 11–12px 大写 + .08em 字距。
+   * ------------------------------------------------------------------ */
+  :root {
+    color-scheme: dark;
+    --bg: #101318;
+    --panel: #171c24;
+    --panel-2: #111820;
+    --raised: #232c3a;
+    --border: #2b3441;
+    --border-2: #344154;
+    --text: #e8edf2;
+    --text-2: #b7c6d8;
+    --text-3: #8fa1b5;
+    --text-4: #6b7d90;
+    --accent: #5cc8ff;
+    --accent-hover: #8bdcff;
+    --accent-text: #5cc8ff;
+    --on-accent: #061019;
+    --ok: #39d98a;
+    --warn: #ffcc66;
+    --bad: #ff6b6b;
+    --off: #475569;
+    --btn-bg: #111820;
+    --btn-border: #344154;
+    --btn-inner: inset 0 0 0 1px #2b3441;
+    --btn-text: #b9c5d3;
+    --btn-text-hover: #e8edf2;
+    --card-grad: linear-gradient(135deg, #1c2430, #121821);
+    --card-shadow: none;
+    --row-hover: rgba(92, 200, 255, .06);
+    --tint-bad: rgba(255, 107, 107, .08);
+    --seg-hover: rgba(92, 200, 255, .10);
+    --ink-hi: #e8edf2;
+  }
+  html[data-theme="light"] {
+    color-scheme: light;
+    --bg: #eef1f5;
+    --panel: #ffffff;
+    --panel-2: #f4f6f9;
+    --raised: #e2e8f0;
+    --border: #d5dce4;
+    --border-2: #ccd5df;
+    --text: #1a2330;
+    --text-2: #3f4f63;
+    --text-3: #5b6b7d;
+    --text-4: #7c8da0;
+    --accent: #5cc8ff;
+    --accent-hover: #3eb6f0;
+    --accent-text: #0c9bd6;
+    --on-accent: #061019;
+    --ok: #1fae6b;
+    --warn: #b57d0e;
+    --bad: #e5484d;
+    --off: #94a3b8;
+    --btn-bg: #f4f6f9;
+    --btn-border: #ccd5df;
+    --btn-inner: inset 0 0 0 1px #d5dce4;
+    --btn-text: #3f4f63;
+    --btn-text-hover: #1a2330;
+    --card-grad: linear-gradient(135deg, #ffffff, #edf1f6);
+    --card-shadow: 0 1px 3px rgba(15, 23, 42, .08);
+    --row-hover: rgba(12, 155, 214, .06);
+    --tint-bad: rgba(229, 72, 77, .08);
+    --seg-hover: rgba(12, 155, 214, .12);
+    --ink-hi: #1a2330;
+  }
+
+  /* ------------------------------------------------------------------
+   * 『Apple』象限（data-ui="apple"，默认）：仅覆写变量，座舱两块保持原值。
+   *   深色：canvas #000、surface #1c1c1e / #2c2c2e、ink #f5f5f7、
+   *         ink2 rgba(235,235,245,.62)、hairline rgba(255,255,255,.10)、
+   *         accent #2997ff / accent-fill #0a84ff、状态色 #30d158/#ff9f0a/#ff453a/#636366
+   *   浅色：canvas #f5f5f7、surface #fff、ink #1d1d1f、ink2 rgba(60,60,67,.62)、
+   *         hairline rgba(0,0,0,.08)、accent #0066cc / accent-fill #0071e3、
+   *         状态色 #34c759/#ff9500/#ff3b30/#8e8e93
+   *   形状：控件 8–10px、卡片 16–18px、胶囊 9999px；字重只用 400/600。
+   * ------------------------------------------------------------------ */
+  html[data-ui="apple"] {
+    color-scheme: dark;
+    --bg: #000000;
+    --panel: #1c1c1e;
+    --panel-2: #2c2c2e;
+    --raised: #2c2c2e;
+    --border: rgba(255, 255, 255, .10);
+    --border-2: rgba(255, 255, 255, .10);
+    --text: #f5f5f7;
+    --text-2: rgba(235, 235, 245, .78);
+    --text-3: rgba(235, 235, 245, .62);
+    --text-4: rgba(235, 235, 245, .42);
+    --accent: #0a84ff;
+    --accent-hover: #3d9bff;
+    --accent-text: #2997ff;
+    --on-accent: #ffffff;
+    --ok: #30d158;
+    --warn: #ff9f0a;
+    --bad: #ff453a;
+    --off: #636366;
+    --btn-bg: #2c2c2e;
+    --btn-border: rgba(255, 255, 255, .10);
+    --btn-inner: none;
+    --btn-text: rgba(235, 235, 245, .78);
+    --btn-text-hover: #f5f5f7;
+    --card-grad: none;
+    --card-shadow: none;
+    --row-hover: rgba(255, 255, 255, .045);
+    --tint-bad: rgba(255, 69, 58, .12);
+    --seg-track: rgba(120, 120, 128, .24);
+    --seg-thumb: #636366;
+    --seg-thumb-shadow: 0 1px 3px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .35);
+    --skel: rgba(235, 235, 245, .14);
+    --version-ink: rgba(235, 235, 245, .55);
+    --header-bg: rgba(0, 0, 0, .72);
+    --row-pressed: rgba(255, 255, 255, .09);
+    --ok-pulse: rgba(48, 209, 88, .45);
+    --selection: rgba(10, 132, 255, .32);
+  }
+  html[data-ui="apple"][data-theme="light"] {
+    color-scheme: light;
+    --bg: #f5f5f7;
+    --panel: #ffffff;
+    --panel-2: #f5f5f7;
+    --raised: #e8e8ed;
+    --border: rgba(0, 0, 0, .08);
+    --border-2: rgba(0, 0, 0, .08);
+    --text: #1d1d1f;
+    --text-2: rgba(60, 60, 67, .82);
+    --text-3: rgba(60, 60, 67, .62);
+    --text-4: rgba(60, 60, 67, .45);
+    --accent: #0071e3;
+    --accent-hover: #0a84ff;
+    --accent-text: #0066cc;
+    --on-accent: #ffffff;
+    --ok: #34c759;
+    --warn: #ff9500;
+    --bad: #ff3b30;
+    --off: #8e8e93;
+    --btn-bg: rgba(118, 118, 128, .12);
+    --btn-border: transparent;
+    --btn-inner: none;
+    --btn-text: rgba(60, 60, 67, .72);
+    --btn-text-hover: #1d1d1f;
+    --card-grad: none;
+    --card-shadow: none;
+    --row-hover: rgba(0, 0, 0, .03);
+    --tint-bad: rgba(255, 59, 48, .08);
+    --seg-track: rgba(120, 120, 128, .16);
+    --seg-thumb: #ffffff;
+    --seg-thumb-shadow: 0 1px 3px rgba(0, 0, 0, .12), 0 1px 2px rgba(0, 0, 0, .06);
+    --skel: rgba(60, 60, 67, .10);
+    --version-ink: rgba(60, 60, 67, .55);
+    --header-bg: rgba(245, 245, 247, .72);
+    --row-pressed: rgba(0, 0, 0, .055);
+    --ok-pulse: rgba(52, 199, 89, .4);
+    --selection: rgba(0, 113, 227, .22);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    /* 与 DD :root / DC body 同一套字体栈 */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial,
+      sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    font-size: 14px;
+  }
+  .page { max-width: 900px; margin: 0 auto; padding: 0 16px 48px; }
+
+  /* ---------- 页头（DD 的 56px 吸顶页头 + DC 的 logo/标题排布） ---------- */
+  .headerRow {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    height: 56px;
+    background: var(--bg);
+  }
+  .logoLink { display: inline-flex; }
+  .headerLogo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-sizing: content-box;
+    align-self: center;
+  }
+  .headerRow h1 {
+    margin: 0 20px 0 0;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 28px;
+    white-space: nowrap;
+  }
+  .titleLink { color: inherit; text-decoration: none; }
+  .headerActions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  /* 版本徽标：与 DD VersionBadge / DC .version 同款——12px 大写 + .08em 字距的弱化文字 */
+  .version {
+    color: var(--version-ink, var(--text-4));
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    display: inline-block;
+  }
+  .ghLink { display: inline-flex; align-items: center; color: var(--text-3); transition: color .15s; }
+  .ghLink:hover, .ghLink:focus-visible { color: var(--accent-text); }
+  .themeButton, .langButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 0;
+    padding: 0;
+    border-radius: 9999px;
+    background: var(--btn-bg);
+    border: 1px solid var(--btn-border);
+    box-shadow: var(--btn-inner);
+    color: var(--btn-text);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    transition: color .15s cubic-bezier(.4, 0, .2, 1), background-color .15s cubic-bezier(.4, 0, .2, 1),
+      border-color .15s cubic-bezier(.4, 0, .2, 1);
+  }
+  .themeButton:hover, .langButton:hover, .themeButton:focus-visible, .langButton:focus-visible {
+    color: var(--btn-text-hover);
+  }
+  /* 图标随生效主题切换：深色显示月亮（点一下切浅色），浅色显示太阳 */
+  .themeButton .icoSun { display: none; }
+  html[data-theme="light"] .themeButton .icoSun { display: block; }
+  html[data-theme="light"] .themeButton .icoMoon { display: none; }
+
+  /* 界面风格分段切换器（座舱 / Apple）：统一几何 v1——28px 轨道 / 24px 段按钮 / 12px 600 字；
+     座舱象限 = 面板色轨道 + 次级描边 + accent 填充激活段，Apple 象限覆写为 iOS 分段控件 */
+  .uiSeg {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 28px;
+    padding: 2px;
+    border-radius: 999px;
+    border: 1px solid var(--border-2);
+    background: var(--panel);
+    box-sizing: border-box;
+  }
+  .uiSegBtn {
+    height: 24px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-3);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color .15s, background-color .15s;
+  }
+  .uiSegBtn:hover { background: var(--seg-hover); color: var(--ink-hi); }
+  .uiSegBtn.active { background: var(--accent); color: var(--on-accent); }
+  .uiSegBtn.active:hover { background: var(--accent-hover); color: var(--on-accent); }
+  .uiSegBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* ---------- 工具条 ---------- */
+  .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .btnPrimary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s;
+  }
+  .btnPrimary:hover:not(:disabled), .btnPrimary:focus-visible:not(:disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+  .btnPrimary:disabled { opacity: .55; cursor: not-allowed; }
+  .toolbarMeta {
+    color: var(--text-4);
+    font-size: 12px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .banner {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--bad);
+    background: var(--tint-bad);
+    color: var(--bad);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* ---------- 设备列表面板（DC .stateCard 的面板语言） ---------- */
+  .panelCard {
+    border: 1px solid var(--border-2);
+    border-radius: 10px;
+    background: var(--card-grad);
+    box-shadow: var(--card-shadow);
+    /* 首屏等待/出错无数据时（座舱象限无骨架屏，刻意的）面板不塌成细线 */
+    min-height: 96px;
+    overflow: hidden;
+  }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 540px; }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 14px;
+    color: var(--text-2);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--row-hover); }
+  td.name { color: var(--text); font-weight: 700; }
+  td.mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  td a { color: var(--accent-text); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  tr.offline td { color: var(--text-4); }
+  tr.offline td.name { color: var(--text-3); font-weight: 600; }
+  tr.offline td.mono a { color: var(--text-4); }
+  .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    background: var(--off);
+  }
+  .dot.online { background: var(--ok); }
+  .status-online { color: var(--ok); font-weight: 700; }
+  .status-offline { color: var(--text-4); font-weight: 600; }
+  .last-seen { color: var(--text-4); font-size: 12px; }
+  .empty { padding: 32px 14px; text-align: center; color: var(--text-3); font-size: 13px; }
+  /* 空态图标：仅 Apple 象限显示（基座隐藏，座舱保持纯文案空态） */
+  .emptyIco { display: none; }
+
+  /* 复制按钮：DC .iconButton 的 26px 小方钮 */
+  .copyBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    min-width: 0;
+    padding: 0;
+    margin-left: 6px;
+    vertical-align: middle;
+    border: 1px solid var(--btn-border);
+    border-radius: 6px;
+    background: var(--btn-bg);
+    box-shadow: var(--btn-inner);
+    color: var(--btn-text);
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+  }
+  .copyBtn:hover, .copyBtn:focus-visible { color: var(--accent-text); border-color: var(--accent-text); }
+
+  /* 轻提示（DC .toast） */
+  .toast {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    max-width: calc(100vw - 36px);
+    background: var(--panel-2);
+    border: 1px solid var(--ok);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+    color: var(--text);
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: .25s;
+    pointer-events: none;
+    z-index: 20;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  html[data-theme="light"] .toast { box-shadow: 0 12px 40px rgba(15, 23, 42, .16); }
+
+  :focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+
+  @media (max-width: 560px) {
+    .page { padding: 0 12px 40px; }
+    .headerRow { height: auto; padding: 10px 0; gap: 10px; }
+    .headerRow h1 { font-size: 18px; line-height: 24px; margin-right: 0; }
+    .headerActions { margin-left: auto; gap: 10px; }
+    .toolbarMeta { width: 100%; }
+    /* 设备列表改卡片式：一台设备一张卡、字段纵向排，不再因 540px 表格横滚裁掉「版本/状态」列；
+       字段名取各 td 的 data-label（render() 写入、跟随语言），窄列断词问题随之消失 */
+    .table-wrap { overflow-x: visible; }
+    table { min-width: 0; }
+    thead { display: none; }
+    tbody, tbody tr { display: block; }
+    tbody tr { padding: 10px 14px; }
+    td { display: flex; align-items: center; padding: 3px 0; border-bottom: none; text-align: right; overflow-wrap: break-word; }
+    td::before {
+      content: attr(data-label);
+      margin-right: auto;
+      padding-right: 12px;
+      color: var(--text-3);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      text-align: left;
+    }
+    .copyBtn { flex: none; }
+  }
+
+  /* ==================================================================
+   * Apple 象限细修：以下规则全部以 html[data-ui="apple"] 限定，
+   * 对座舱象限（data-ui="cockpit"）零影响。
+   * ================================================================== */
+  html[data-ui="apple"] .headerRow h1 { font-weight: 600; letter-spacing: -.02em; }
+  html[data-ui="apple"] .version { font-weight: 400; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+
+  /* 分段切换器：iOS 分段控件——灰底胶囊轨道（无边框观感）+ 浮起选中滑块（带投影）；
+     hover 只把段文字提为一级标签色、不变底（基座的 hover 底色在此压回透明） */
+  html[data-ui="apple"] .uiSeg { background: var(--seg-track); border-color: transparent; }
+  html[data-ui="apple"] .uiSegBtn {
+    color: var(--text-3);
+    transition: color .15s, background-color .15s, transform .1s cubic-bezier(.32, .72, 0, 1);
+  }
+  html[data-ui="apple"] .uiSegBtn:hover { background: transparent; color: var(--text); }
+  html[data-ui="apple"] .uiSegBtn.active { background: var(--seg-thumb); color: var(--text); box-shadow: var(--seg-thumb-shadow); }
+
+  /* 按钮按下回弹：scale(.97) 100ms */
+  html[data-ui="apple"] .btnPrimary,
+  html[data-ui="apple"] .copyBtn,
+  html[data-ui="apple"] .themeButton,
+  html[data-ui="apple"] .langButton {
+    transition: color .2s cubic-bezier(.32, .72, 0, 1), background-color .2s cubic-bezier(.32, .72, 0, 1),
+      border-color .2s cubic-bezier(.32, .72, 0, 1), transform .1s cubic-bezier(.32, .72, 0, 1);
+  }
+  html[data-ui="apple"] .btnPrimary:active:not(:disabled),
+  html[data-ui="apple"] .copyBtn:active,
+  html[data-ui="apple"] .themeButton:active,
+  html[data-ui="apple"] .langButton:active,
+  html[data-ui="apple"] .uiSegBtn:active { transform: scale(.97); }
+
+  html[data-ui="apple"] .btnPrimary { border-radius: 10px; border-color: transparent; font-weight: 600; }
+  html[data-ui="apple"] .btnPrimary:hover:not(:disabled), html[data-ui="apple"] .btnPrimary:focus-visible:not(:disabled) {
+    border-color: transparent;
+  }
+  html[data-ui="apple"] .toolbarMeta { text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+  html[data-ui="apple"] .banner { border-radius: 12px; }
+
+  /* 移动端卡片字段名：与 Apple 表头同款（13px 非大写），不继承座舱微标签 */
+  @media (max-width: 560px) {
+    html[data-ui="apple"] td::before { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+  }
+
+  /* 分组卡去渐变去投影：iOS inset-grouped 同款——无描边，靠底色对比浮于画布，17px 圆角 */
+  html[data-ui="apple"] .panelCard {
+    background: var(--panel);
+    border: 0;
+    border-radius: 17px;
+    box-shadow: none;
+  }
+  /* 列表栏头：去分隔线、上下留白收成 iOS 分组标题观感 */
+  html[data-ui="apple"] th {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    border-bottom: none;
+    padding: 12px 14px 6px;
+  }
+  html[data-ui="apple"] td {
+    border-bottom-color: var(--border);
+    font-variant-numeric: tabular-nums;
+    transition: color .32s ease, background-color .12s ease, border-color .32s ease;
+  }
+  html[data-ui="apple"] td.name { font-weight: 600; }
+  html[data-ui="apple"] .status-online { font-weight: 600; }
+  html[data-ui="apple"] .copyBtn { border-radius: 8px; border-color: transparent; }
+  html[data-ui="apple"] .copyBtn:hover, html[data-ui="apple"] .copyBtn:focus-visible {
+    border-color: transparent;
+    background: var(--row-hover);
+  }
+  /* toast：去绿色描边改 hairline，spring 时序进场，随主题交叉淡化 */
+  html[data-ui="apple"] .toast {
+    border-color: var(--border);
+    border-radius: 16px;
+    transition: opacity .28s cubic-bezier(.32, .72, 0, 1), transform .28s cubic-bezier(.32, .72, 0, 1),
+      background-color .32s ease, border-color .32s ease;
+  }
+
+  /* 行增删 / 状态变化：200ms cubic-bezier(.32,.72,0,1)。render() 只在行集合
+     或在线状态变化时给 tbody 加 rows-anim，常态 5s 轮询不重复播放。 */
+  html[data-ui="apple"] tbody.rows-anim tr { animation: appleRowIn .2s cubic-bezier(.32, .72, 0, 1) both; }
+  @keyframes appleRowIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* 首屏骨架屏：呼吸占位条，1.2s 一个周期，仅 Apple 象限注入/显示 */
+  html[data-ui="apple"] .skel { padding: 14px; display: flex; flex-direction: column; gap: 18px; }
+  html[data-ui="apple"] .skelRow { display: flex; align-items: center; gap: 14px; }
+  html[data-ui="apple"] .skelBar {
+    display: block;
+    height: 12px;
+    border-radius: 6px;
+    background: var(--skel);
+    animation: skelBreath 1.2s ease-in-out infinite;
+  }
+  html[data-ui="apple"] .skelRow:nth-child(2) .skelBar { animation-delay: .15s; }
+  html[data-ui="apple"] .skelRow:nth-child(3) .skelBar { animation-delay: .3s; }
+  html[data-ui="apple"] .skelRow:nth-child(4) .skelBar { animation-delay: .45s; }
+  @keyframes skelBreath { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+  html:not([data-ui="apple"]) .skel { display: none; }
+
+  /* ==================================================================
+   * Apple 象限全面细修（2026-09-16 第二轮）：页头材质 / 整行跳转 /
+   * 状态点脉冲 / 空态图标 / 主题交叉淡化 / 减弱动效与透明度兜底。
+   * 全部以 html[data-ui="apple"] 限定，对座舱象限零影响。
+   * ================================================================== */
+  /* 吸顶页头：iOS 导航栏材质——半透明 + 背景模糊 + 底部 hairline，
+     左右负边距抵消 .page 内边距，把模糊条与分隔线拉通到页面边缘 */
+  html[data-ui="apple"] .headerRow {
+    margin: 0 -16px;
+    padding: 0 16px;
+    background: var(--header-bg);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  html[data-ui="apple"] .toolbar { margin-top: 16px; }
+  /* 主题切换 320ms 交叉淡化（控件自身已有更快的交互过渡，不重复列） */
+  html[data-ui="apple"] body, html[data-ui="apple"] .headerRow, html[data-ui="apple"] .panelCard,
+  html[data-ui="apple"] .banner, html[data-ui="apple"] .empty {
+    transition: background-color .32s ease, border-color .32s ease, color .32s ease;
+  }
+  html[data-ui="apple"] ::selection { background: var(--selection); }
+
+  /* 页头外链（logo / 标题 / GitHub 图标）：hover 微淡、按压回弹 */
+  html[data-ui="apple"] .logoLink, html[data-ui="apple"] .titleLink, html[data-ui="apple"] .ghLink {
+    transition: opacity .15s ease, color .15s ease, transform .1s cubic-bezier(.32, .72, 0, 1);
+  }
+  html[data-ui="apple"] .logoLink:hover, html[data-ui="apple"] .titleLink:hover { opacity: .72; }
+  html[data-ui="apple"] .logoLink:active, html[data-ui="apple"] .titleLink:active,
+  html[data-ui="apple"] .ghLink:active { transform: scale(.95); }
+
+  /* 整行点击跳对应控制台（JS 仅 Apple 象限启用，座舱行交互不变）：
+     指针手势 + 行按压反馈 + 右缘 chevron 暗示可跳转（iOS 列表惯用法） */
+  html[data-ui="apple"] tbody tr { position: relative; cursor: pointer; }
+  html[data-ui="apple"] tbody tr:active td { background: var(--row-pressed); }
+  html[data-ui="apple"] tbody tr td:last-child { padding-right: 30px; }
+  html[data-ui="apple"] tbody tr td:last-child::after {
+    content: "›";
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-4);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1;
+    pointer-events: none;
+    transition: color .15s ease;
+  }
+  html[data-ui="apple"] tbody tr:hover td:last-child::after { color: var(--text-3); }
+  /* 行内链接：hover 改亮度、不画下划线（apple.com 同款） */
+  html[data-ui="apple"] td a { transition: color .15s ease; }
+  html[data-ui="apple"] td a:hover { color: var(--accent-hover); text-decoration: none; }
+
+  /* 在线状态点：2.4s 呼吸脉冲光环（prefers-reduced-motion 下关闭） */
+  html[data-ui="apple"] .dot.online { animation: appleDotPulse 2.4s cubic-bezier(.4, 0, .2, 1) infinite; }
+  @keyframes appleDotPulse {
+    0% { box-shadow: 0 0 0 0 var(--ok-pulse); }
+    70% { box-shadow: 0 0 0 7px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+
+  /* 空态：居中信号图标 + 文案（图标基座隐藏，座舱保持纯文案） */
+  html[data-ui="apple"] .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 48px 14px;
+    font-size: 14px;
+  }
+  html[data-ui="apple"] .emptyIco { display: block; width: 40px; height: 40px; color: var(--text-4); }
+
+  @media (max-width: 560px) {
+    html[data-ui="apple"] .headerRow { margin: 0 -12px; padding: 10px 12px; }
+    /* 设备卡片之间补 hairline 分隔；值列统一右缩 26px，为垂直居中的 chevron 让出尾槽 */
+    html[data-ui="apple"] tbody tr + tr { border-top: 1px solid var(--border); }
+    html[data-ui="apple"] tbody tr td { padding-right: 26px; }
+    html[data-ui="apple"] tbody tr td:last-child::after { right: 12px; }
+  }
+
+  /* 减弱动效：关闭脉冲/骨架呼吸/行动画，过渡缩到近乎即时 */
+  @media (prefers-reduced-motion: reduce) {
+    html[data-ui="apple"] .dot.online,
+    html[data-ui="apple"] .skelBar,
+    html[data-ui="apple"] tbody.rows-anim tr { animation: none; }
+    html[data-ui="apple"] *, html[data-ui="apple"] *::before, html[data-ui="apple"] *::after {
+      transition-duration: .01ms !important;
+    }
+  }
+  /* 减弱透明度：页头退回实色，不启用背景模糊 */
+  @media (prefers-reduced-transparency: reduce) {
+    html[data-ui="apple"] .headerRow {
+      background: var(--bg);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="headerRow">
+      <a class="logoLink" href="https://www.donkeydrift.com" target="_blank" rel="noopener" data-i18n-aria="aria.logo">
+        <img class="headerLogo" src="/favicon.png" alt="DonkeyDrift">
+      </a>
+      <h1><a class="titleLink" href="https://www.donkeydrift.com" target="_blank" rel="noopener">Find Donkey Car</a></h1>
+      <div class="headerActions">
+        <div class="uiSeg" id="ui-seg" role="group" data-i18n-aria="aria.uistyle">
+          <button class="uiSegBtn" type="button" data-ui-value="cockpit" data-i18n="ui.cockpit"></button>
+          <button class="uiSegBtn" type="button" data-ui-value="apple">Apple</button>
+        </div>
+        <span class="version" id="page-version">v1.3.0</span>
+        <a class="ghLink" href="https://github.com/DonkeyDrift/DonkeyDrift" target="_blank" rel="noopener noreferrer"
+           data-i18n-aria="aria.github" data-i18n-title="aria.github">
+          <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+          </svg>
+        </a>
+        <button class="themeButton" id="theme-btn" type="button">
+          <svg class="icoMoon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg>
+          <svg class="icoSun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+          </svg>
+        </button>
+        <button class="langButton" id="lang-btn" type="button">中</button>
+      </div>
+    </header>
+
+    <section class="toolbar">
+      <button class="btnPrimary" id="search-btn" type="button" data-i18n="page.refresh" data-i18n-aria="aria.refresh"></button>
+      <span class="toolbarMeta" id="updated"></span>
+    </section>
+
+    <div id="status" class="banner" hidden></div>
+    <section id="results" class="panelCard"></section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var searchBtn = $('search-btn');
+  var statusEl = $('status');
+  var resultsEl = $('results');
+  var updatedEl = $('updated');
+  var themeBtn = $('theme-btn');
+  var langBtn = $('lang-btn');
+  var uiSegEl = $('ui-seg');
+  var toastEl = $('toast');
+
+  var POLL_MS = 5000;          // 自动刷新间隔（1s 轮询会打满 Cloudflare 免费额度，故放宽到 5s）
+  var LANG_STORAGE_KEY = 'findcar.ui.lang';   // 与 DD 'donkeydrifter.ui.lang'、DC 'mus4.ui.lang' 同命名惯例
+  var UI_STORAGE_KEY = 'findcar.ui.style';    // 界面风格：cockpit | apple，默认 apple
+
+  // 各类型的正常上报周期，与 functions/devices.js 的在线窗口同口径：
+  // DD 后端 150 秒一跳、ESP32 300 秒一跳。心跳还在周期内 = 数据就是当前的，
+  // 不该把正常跳动中的间隔当成「陈旧」数字摆给用户看。
+  var HEARTBEAT_MS = { dd: 150000, esp32: 300000 };
+  var DEFAULT_HEARTBEAT_MS = 300000;
+  var FRESH_SLACK_MS = 60000;  // 容忍漏跳一次的余量：超出周期 + 余量才提示「未上报」
+  var JUST_NOW_MS = 90000;     // 90 秒以内一律叫「刚刚」
+
+  // ---------------- i18n（zh / en，默认跟随浏览器语言，手动选择写入 localStorage） ----------------
+  var MESSAGES = {
+    zh: {
+      'page.refresh': '刷新',
+      'page.refreshing': '查找中…',
+      'page.updated': '刷新于 {time} · {online}/{total} 在线',
+      'page.empty': '没有在线设备',
+      'page.error': '网络错误',
+      'ui.cockpit': '座舱',
+      'table.name': '名称',
+      'table.type': '设备类型',
+      'table.ip': '局域网 IP',
+      'table.version': '版本',
+      'table.status': '状态',
+      'status.online': '在线',
+      'status.offline': '离线',
+      'status.notReported': '{duration}未上报',
+      'time.justNow': '刚刚',
+      'time.ago': '{duration}前',
+      'time.minutes': '{n} 分钟',
+      'time.hours': '{n} 小时',
+      'time.days': '{n} 天',
+      'type.esp32': 'ESP32 小车',
+      'type.ddHost': '{os} 主机',
+      'type.ddFallback': 'DonkeyDrift 主机',
+      'tip.esp32': 'ESP32 小车 · Donkey Car 车载控制器（Drifter Console）',
+      'tip.dd': '系统：{os} · 主机型号：{model} · 主机名：{hostname} · DonkeyDrift 后端',
+      'tip.lastHeartbeat': '最后心跳：{clock}（{ago}）',
+      'tip.copyIp': '复制 IP',
+      'tip.open.esp32': '打开 Drifter Console',
+      'tip.open.dd': '打开 DonkeyDrifter',
+      'copy.done': '已复制 {target}',
+      'copy.fail': '复制失败，请手动选择',
+      'aria.logo': 'DonkeyDrift 官网',
+      'aria.github': 'DonkeyDrift GitHub 仓库',
+      'aria.refresh': '手动刷新设备列表',
+      'aria.uistyle': '界面风格：座舱或 Apple',
+      'aria.theme.toLight': '切换到浅色主题',
+      'aria.theme.toDark': '切换到深色主题',
+      'aria.lang.toEn': 'Switch to English',
+      'aria.lang.toZh': '切换到中文'
+    },
+    en: {
+      'page.refresh': 'Refresh',
+      'page.refreshing': 'Searching…',
+      'page.updated': 'Updated {time} · {online}/{total} online',
+      'page.empty': 'No devices online',
+      'page.error': 'Network error',
+      'ui.cockpit': 'Cockpit',
+      'table.name': 'Name',
+      'table.type': 'Device type',
+      'table.ip': 'LAN IP',
+      'table.version': 'Version',
+      'table.status': 'Status',
+      'status.online': 'Online',
+      'status.offline': 'Offline',
+      'status.notReported': 'no report for {duration}',
+      'time.justNow': 'just now',
+      'time.ago': '{duration} ago',
+      'time.minutes': '{n} min',
+      'time.hours': '{n} h',
+      'time.days': '{n} d',
+      'type.esp32': 'ESP32 car',
+      'type.ddHost': '{os} host',
+      'type.ddFallback': 'DonkeyDrifter host',
+      'tip.esp32': 'ESP32 car · Donkey Car controller (Drifter Console)',
+      'tip.dd': 'OS: {os} · Host model: {model} · Hostname: {hostname} · DonkeyDrifter backend',
+      'tip.lastHeartbeat': 'Last heartbeat: {clock} ({ago})',
+      'tip.copyIp': 'Copy IP',
+      'tip.open.esp32': 'Open Drifter Console',
+      'tip.open.dd': 'Open DonkeyDrifter',
+      'copy.done': 'Copied {target}',
+      'copy.fail': 'Copy failed, please select manually',
+      'aria.logo': 'DonkeyDrift website',
+      'aria.github': 'DonkeyDrift on GitHub',
+      'aria.refresh': 'Refresh device list',
+      'aria.uistyle': 'Interface style: Cockpit or Apple',
+      'aria.theme.toLight': 'Switch to light theme',
+      'aria.theme.toDark': 'Switch to dark theme',
+      'aria.lang.toEn': 'Switch to English',
+      'aria.lang.toZh': '切换到中文'
+    }
+  };
+
+  function detectBrowserLanguage() {
+    try {
+      return (navigator.language || '').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+    } catch (e) {
+      return 'zh';
+    }
+  }
+
+  function readInitialLanguage() {
+    try {
+      var stored = window.localStorage.getItem(LANG_STORAGE_KEY);
+      if (stored === 'zh' || stored === 'en') return stored;
+    } catch (e) { /* localStorage 不可用时退回浏览器语言 */ }
+    return detectBrowserLanguage();
+  }
+
+  var lang = readInitialLanguage();
+
+  // 查表顺序：当前语言 → 中文兜底 → key 本身；{name} 占位符插值
+  function t(key, vars) {
+    var table = MESSAGES[lang] || MESSAGES.zh;
+    var text = table[key] != null ? table[key] : (MESSAGES.zh[key] != null ? MESSAGES.zh[key] : key);
+    if (!vars) return text;
+    return text.replace(/\{(\w+)\}/g, function (m, name) {
+      return vars[name] !== undefined ? String(vars[name]) : m;
+    });
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function localeTag() { return lang === 'zh' ? 'zh-CN' : 'en-GB'; }
+
+  // ---------------- 主题（DD ThemeSwitcher / DC themeButton 同款：系统默认 + 内存态切换） ----------------
+  function resolvedTheme() {
+    return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    themeBtn.setAttribute('aria-label', t(theme === 'dark' ? 'aria.theme.toLight' : 'aria.theme.toDark'));
+    themeBtn.setAttribute('title', themeBtn.getAttribute('aria-label'));
+  }
+
+  // ---------------- 界面风格（cockpit / apple，默认 apple，选择持久化） ----------------
+  function currentUi() {
+    return document.documentElement.dataset.ui === 'cockpit' ? 'cockpit' : 'apple';
+  }
+
+  function syncSegButtons() {
+    var ui = currentUi();
+    var btns = uiSegEl.querySelectorAll('.uiSegBtn');
+    for (var i = 0; i < btns.length; i += 1) {
+      var on = btns[i].getAttribute('data-ui-value') === ui;
+      if (on) {
+        btns[i].classList.add('active');
+      } else {
+        btns[i].classList.remove('active');
+      }
+      btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+
+  function applyUiStyle(next, persist) {
+    document.documentElement.dataset.ui = next;
+    if (persist) {
+      try {
+        window.localStorage.setItem(UI_STORAGE_KEY, next);
+      } catch (e) { /* localStorage 不可用时保持内存态 */ }
+    }
+    syncSegButtons();
+  }
+
+  // ---------------- 渲染 ----------------
+  function setLoading(loading) {
+    searchBtn.disabled = loading;
+    searchBtn.textContent = loading ? t('page.refreshing') : t('page.refresh');
+  }
+
+  function showError(msg) {
+    statusEl.hidden = false;
+    statusEl.className = 'banner';
+    statusEl.textContent = msg;
+    // 面板内不再重复同一文案：有上次成功列表就保留，否则清空（含骨架屏）；meta 照常刷新
+    if (!lastDevices.length) resultsEl.innerHTML = '';
+    writeMeta(lastDevices);
+  }
+
+  function hideStatus() {
+    statusEl.hidden = true;
+    statusEl.textContent = '';
+  }
+
+  function deviceLink(d) {
+    var ip = String(d.lan_ip || '');
+    var port = Number(d.port) > 0 ? Number(d.port) : 80;
+    return d.type === 'esp32' ? 'http://' + ip + '/' : 'http://' + ip + ':' + port + '/';
+  }
+
+  function deviceHost(d) {
+    var ip = String(d.lan_ip || '');
+    var port = Number(d.port) > 0 ? Number(d.port) : 80;
+    return d.type === 'esp32' ? ip : ip + ':' + port;
+  }
+
+  // 「设备类型」列：ESP32 小车老老实实写 ESP32；DD 后端写它跑在什么系统上
+  // （如「Ubuntu 26.04 LTS 主机」）。像 ADL-N 这种只有厂商自己认识的主板型号，
+  // 不再当类型显示，只放进悬停提示里。
+  function typeLabel(d) {
+    if (d.type === 'esp32') return t('type.esp32');
+    if (d.type === 'dd') {
+      var os = String(d.os || '').trim();
+      return os ? t('type.ddHost', { os: os }) : t('type.ddFallback');
+    }
+    return String(d.type || '');
+  }
+
+  function typeTitle(d) {
+    if (d.type === 'esp32') return t('tip.esp32');
+    if (d.type !== 'dd') return '';
+    var parts = [];
+    if (d.os) parts.push(lang === 'zh' ? '系统：' + d.os : 'OS: ' + d.os);
+    if (d.model) parts.push((lang === 'zh' ? '主机型号：' : 'Host model: ') + d.model);
+    if (d.hostname) parts.push((lang === 'zh' ? '主机名：' : 'Hostname: ') + d.hostname);
+    parts.push(lang === 'zh' ? 'DonkeyDrift 后端' : 'DonkeyDrifter backend');
+    return parts.join(' · ');
+  }
+
+  function heartbeatMs(d) {
+    return HEARTBEAT_MS[d.type] || DEFAULT_HEARTBEAT_MS;
+  }
+
+  function ageSince(ms) {
+    var stamp = Number(ms) || 0;
+    return stamp ? Math.max(0, Date.now() - stamp) : 0;
+  }
+
+  // 「3 分钟」「2 小时」——只描述时长，后面接「前」还是「未上报」由调用方决定
+  function durationText(ms) {
+    var min = Math.floor(ms / 60000);
+    if (min < 60) return t('time.minutes', { n: Math.max(1, min) });
+    var hour = Math.floor(min / 60);
+    if (hour < 24) return t('time.hours', { n: hour });
+    return t('time.days', { n: Math.floor(hour / 24) });
+  }
+
+  function agoText(ms) {
+    return ms < JUST_NOW_MS ? t('time.justNow') : t('time.ago', { duration: durationText(ms) });
+  }
+
+  // 状态列副文案：在线且心跳仍在正常周期内 → 「刚刚」（数据是当前的）；
+  // 心跳迟到才如实说明「N 分钟未上报」；离线设备显示距最后一次心跳多久。
+  function statusDetail(d) {
+    if (!Number(d.last_seen_epoch_ms)) return '—';
+    var age = ageSince(d.last_seen_epoch_ms);
+    if (d.online) {
+      return age < heartbeatMs(d) + FRESH_SLACK_MS ? t('time.justNow') : t('status.notReported', { duration: durationText(age) });
+    }
+    return agoText(age);
+  }
+
+  function clockText(ms) {
+    try {
+      return new Date(ms).toLocaleTimeString(localeTag(), { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch (e) {
+      return new Date(ms).toTimeString().slice(0, 8);
+    }
+  }
+
+  function statusTitle(d) {
+    if (!Number(d.last_seen_epoch_ms)) return '';
+    var stamp = Number(d.last_seen_epoch_ms);
+    return t('tip.lastHeartbeat', {
+      clock: clockText(stamp),
+      ago: agoText(ageSince(stamp))
+    });
+  }
+
+  // 行签名：行集合或在线状态变化时变了 → Apple 象限给 tbody 加 rows-anim 播一次 200ms 淡入；
+  // 常态 5s 轮询签名不变，不重复播放。
+  var lastRowSig = null;
+
+  // 「刷新于 … · N/M 在线」：空列表与拉取出错时也写，工具条右侧不留白
+  function writeMeta(devices) {
+    var online = 0;
+    for (var i = 0; i < devices.length; i += 1) {
+      if (devices[i].online) online += 1;
+    }
+    updatedEl.textContent = t('page.updated', {
+      time: clockText(Date.now()),
+      online: online,
+      total: devices.length
+    });
+  }
+
+  function render(devices) {
+    if (!devices || !devices.length) {
+      resultsEl.innerHTML = '<div class="empty">' +
+        '<svg class="emptyIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+        'stroke-linecap="round" aria-hidden="true">' +
+        '<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"></circle>' +
+        '<path d="M8.46 8.46a5 5 0 0 0 0 7.08"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.08"></path>' +
+        '<path d="M5.64 5.64a9 9 0 0 0 0 12.72"></path><path d="M18.36 5.64a9 9 0 0 1 0 12.72"></path></svg>' +
+        '<span>' + esc(t('page.empty')) + '</span></div>';
+      lastRowSig = '';
+      writeMeta([]);
+      return;
+    }
+
+    var sig = devices.map(function (d) {
+      return String(d.device_id) + ':' + (d.online ? '1' : '0');
+    }).join('|');
+    var animate = sig !== lastRowSig;
+    lastRowSig = sig;
+
+    var rows = devices.map(function (d) {
+      var isOnline = !!d.online;
+      var title = typeTitle(d);
+      var tip = statusTitle(d);
+      return '<tr class="' + (isOnline ? '' : 'offline') + '">' +
+        '<td class="name" data-label="' + esc(t('table.name')) + '">' + esc(d.hostname || d.device_id) + '</td>' +
+        '<td data-label="' + esc(t('table.type')) + '"' + (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(typeLabel(d)) + '</td>' +
+        '<td class="mono" data-label="' + esc(t('table.ip')) + '"><a href="' + esc(deviceLink(d)) + '" target="_blank" rel="noopener noreferrer" title="' +
+          esc(t(d.type === 'esp32' ? 'tip.open.esp32' : 'tip.open.dd')) + '">' +
+          esc(deviceHost(d)) + '</a>' +
+          '<button class="copyBtn" type="button" data-copy="' + esc(deviceHost(d)) + '" title="' + esc(t('tip.copyIp')) +
+          '" aria-label="' + esc(t('tip.copyIp')) + '">' +
+          '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<rect x="9" y="9" width="11" height="11" rx="2"></rect>' +
+          '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></td>' +
+        '<td class="mono" data-label="' + esc(t('table.version')) + '">' + esc(d.version || '—') + '</td>' +
+        '<td data-label="' + esc(t('table.status')) + '"' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' +
+          '<span class="dot ' + (isOnline ? 'online' : 'offline') + '"></span>' +
+          '<span class="' + (isOnline ? 'status-online' : 'status-offline') + '">' +
+          esc(isOnline ? t('status.online') : t('status.offline')) + '</span>' +
+          '<span class="last-seen"> · ' + esc(statusDetail(d)) + '</span></td>' +
+        '</tr>';
+    }).join('');
+
+    resultsEl.innerHTML =
+      '<div class="table-wrap"><table>' +
+      '<thead><tr><th>' + esc(t('table.name')) + '</th><th>' + esc(t('table.type')) + '</th>' +
+      '<th>' + esc(t('table.ip')) + '</th><th>' + esc(t('table.version')) + '</th>' +
+      '<th>' + esc(t('table.status')) + '</th></tr></thead>' +
+      '<tbody' + (animate ? ' class="rows-anim"' : '') + '>' + rows + '</tbody></table></div>';
+
+    writeMeta(devices);
+  }
+
+  // ---------------- 轻提示（DC .toast 同款） ----------------
+  var toastTimer = 0;
+  function showToast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      try {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        document.body.removeChild(area);
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  resultsEl.addEventListener('click', function (event) {
+    var btn = event.target.closest ? event.target.closest('.copyBtn') : null;
+    if (!btn) return;
+    var target = btn.getAttribute('data-copy') || '';
+    copyText(target).then(function () {
+      showToast(t('copy.done', { target: target }));
+    }).catch(function () {
+      showToast(t('copy.fail'));
+    });
+  });
+
+  // 整行点击跳对应控制台：仅 Apple 象限启用（座舱行交互保持原样）；
+  // 点在链接/按钮上、或正在划选文本时不触发，键盘用户仍走 IP 链接
+  resultsEl.addEventListener('click', function (event) {
+    if (currentUi() !== 'apple') return;
+    if (!event.target.closest) return;
+    if (event.target.closest('a, button')) return;
+    var row = event.target.closest('tr');
+    if (!row) return;
+    try {
+      if (window.getSelection && String(window.getSelection())) return;
+    } catch (e) { /* 忽略选区读取异常 */ }
+    var link = row.querySelector('td.mono a');
+    if (link) window.open(link.href, '_blank', 'noopener');
+  });
+
+  // ---------------- 数据拉取 ----------------
+  var lastDevices = [];
+
+  function search(isManual) {
+    hideStatus();
+    if (isManual) setLoading(true);
+
+    fetch('/devices', { cache: 'no-store' })
+      .then(function (resp) {
+        return resp.json().then(function (data) {
+          if (!resp.ok) {
+            throw new Error(data && data.error ? data.error : ('HTTP ' + resp.status));
+          }
+          return data;
+        });
+      })
+      .then(function (data) {
+        lastDevices = data && Array.isArray(data.devices) ? data.devices : [];
+        render(lastDevices);
+      })
+      .catch(function (err) {
+        // 断网等网络层 TypeError 不泄漏浏览器原生英文（Failed to fetch），统一走词条；HTTP 非 2xx 保留后端 error 字段
+        showError(err instanceof TypeError || !err || !err.message ? t('page.error') : err.message);
+      })
+      .then(function () {
+        if (isManual) setLoading(false);
+      });
+  }
+
+  // ---------------- 交互装配 ----------------
+  function applyStaticText() {
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i += 1) {
+      nodes[i].textContent = t(nodes[i].getAttribute('data-i18n'));
+    }
+    var ariaNodes = document.querySelectorAll('[data-i18n-aria]');
+    for (var j = 0; j < ariaNodes.length; j += 1) {
+      var el = ariaNodes[j];
+      var text = t(el.getAttribute('data-i18n-aria'));
+      el.setAttribute('aria-label', text);
+      if (el.hasAttribute('data-i18n-title')) el.setAttribute('title', text);
+    }
+  }
+
+  function applyLanguage(next) {
+    lang = next;
+    try {
+      document.documentElement.lang = next;
+      window.localStorage.setItem(LANG_STORAGE_KEY, next);
+    } catch (e) { /* localStorage 不可用时保持内存态 */ }
+    langBtn.textContent = next === 'zh' ? '中' : 'EN';
+    langBtn.setAttribute('aria-label', t(next === 'zh' ? 'aria.lang.toEn' : 'aria.lang.toZh'));
+    langBtn.setAttribute('title', langBtn.getAttribute('aria-label'));
+    applyStaticText();
+    applyTheme(resolvedTheme());   // 主题按钮的 aria/title 文案跟随语言
+    setLoading(searchBtn.disabled);
+    if (lastDevices.length) render(lastDevices);
+  }
+
+  // 首屏骨架屏：仅 Apple 象限注入，等待首个 /devices 响应期间显示呼吸占位条
+  function showSkeleton() {
+    if (currentUi() !== 'apple') return;
+    var rows = '';
+    for (var i = 0; i < 4; i += 1) {
+      rows += '<div class="skelRow">' +
+        '<span class="skelBar" style="width:22%"></span>' +
+        '<span class="skelBar" style="width:16%"></span>' +
+        '<span class="skelBar" style="width:14%"></span>' +
+        '<span class="skelBar" style="width:10%"></span>' +
+        '<span class="skelBar" style="width:12%"></span></div>';
+    }
+    resultsEl.innerHTML = '<div class="skel" aria-hidden="true">' + rows + '</div>';
+  }
+
+  themeBtn.addEventListener('click', function () {
+    applyTheme(resolvedTheme() === 'dark' ? 'light' : 'dark');   // 仅内存：刷新后重新跟随系统
+  });
+
+  langBtn.addEventListener('click', function () {
+    applyLanguage(lang === 'zh' ? 'en' : 'zh');
+  });
+
+  uiSegEl.addEventListener('click', function (event) {
+    var btn = event.target.closest ? event.target.closest('.uiSegBtn') : null;
+    if (!btn) return;
+    var next = btn.getAttribute('data-ui-value');
+    if (next !== 'cockpit' && next !== 'apple') return;
+    applyUiStyle(next, true);
+  });
+
+  searchBtn.addEventListener('click', function () { search(true); });
+
+  applyUiStyle(currentUi(), false);
+  applyLanguage(lang);
+  showSkeleton();
+  search(false);
+  setInterval(function () {
+    if (!document.hidden) search(false);
+  }, POLL_MS);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) search(false);
+  });
+})();
+</script>
+</body>
+</html>
