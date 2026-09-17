@@ -60,7 +60,7 @@ function check(name, ok, detail) {
   ];
   for (const theme of ['dark', 'light']) {
     const grab = async (url, useInit) => {
-      const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, colorScheme: theme });
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, colorScheme: theme, locale: 'zh-CN' });
       const page = await ctx.newPage();
       if (useInit) {
         await page.addInitScript(() => window.localStorage.setItem('findcar.ui.style', 'cockpit'));
@@ -102,7 +102,7 @@ function check(name, ok, detail) {
   // ---------- 3) 行为检查 ----------
   // 390px 无横向滚动（两种风格）
   for (const ui of ['apple', 'cockpit']) {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'zh-CN' });
     const page = await ctx.newPage();
     await page.addInitScript((u) => window.localStorage.setItem('findcar.ui.style', u), ui);
     await page.goto(BASE + '/', { waitUntil: 'networkidle' });
@@ -114,7 +114,7 @@ function check(name, ok, detail) {
 
   // 小字已删 + 骨架屏 + 默认 apple + 切换器 + 持久化 + tooltip 纯净
   {
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 } });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, locale: 'zh-CN' });
     const page = await ctx.newPage();
     // 不设任何 storage：默认应为 apple
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
@@ -186,7 +186,7 @@ function check(name, ok, detail) {
 
   // 轮询频率未变：5s 内应只见 1 次首取 + 第 5s 第二次（粗验 POLL_MS 未被改小）
   {
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 } });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, locale: 'zh-CN' });
     const page = await ctx.newPage();
     let hits = 0;
     page.on('request', (r) => { if (r.url().endsWith('/devices')) hits += 1; });

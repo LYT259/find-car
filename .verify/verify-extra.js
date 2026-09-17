@@ -31,7 +31,7 @@ function check(name, ok, detail) {
 
   // 1) apple 桌面：整行点击 + 复制不冲突 + 绿勾 + toast 截图 + 转环
   {
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 } });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, locale: 'zh-CN' });
     const page = await ctx.newPage();
     await page.addInitScript(() => {
       window.localStorage.setItem('findcar.ui.style', 'apple');
@@ -93,7 +93,7 @@ function check(name, ok, detail) {
 
   // 2) cockpit：行点击不跳转、转环/绿勾不出现（基座隐藏）
   {
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 } });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, locale: 'zh-CN' });
     const page = await ctx.newPage();
     await page.addInitScript(() => window.localStorage.setItem('findcar.ui.style', 'cockpit'));
     await page.goto(`http://127.0.0.1:${PORT_MAIN}/`, { waitUntil: 'networkidle' });
@@ -118,7 +118,7 @@ function check(name, ok, detail) {
 
   // 3) apple 移动端整行点击
   {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'zh-CN' });
     const page = await ctx.newPage();
     await page.addInitScript(() => {
       window.localStorage.setItem('findcar.ui.style', 'apple');
@@ -139,7 +139,7 @@ function check(name, ok, detail) {
     [PORT_EMPTY, 'empty-apple-light-1280', 'light', 1280],
     [PORT_ERROR, 'error-apple-dark-1280', 'dark', 1280],
   ]) {
-    const ctx = await browser.newContext({ viewport: { width, height: 844 }, colorScheme: theme });
+    const ctx = await browser.newContext({ viewport: { width, height: 844 }, colorScheme: theme, locale: 'zh-CN' });
     const page = await ctx.newPage();
     await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1200);
