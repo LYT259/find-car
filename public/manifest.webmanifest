@@ -1,0 +1,19 @@
+{
+  "name": "Find Donkey Car",
+  "short_name": "Find Car",
+  "description": "一键找到局域网里的 Donkey 小车与主机，直达控制台",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "200x200",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

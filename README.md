@@ -11,15 +11,25 @@ launcher 自身端口 8090（点 IP 落到 launcher 菜单页，可一键「打�
 
 ## 文件
 
-- `functions/report.js` — Pages Function：`POST /report` 写 KV
+- `functions/report.js` — Pages Function：`POST /report` 写 KV（设备「旧不在线 → 新在线」跳变时
+  后台扇出 Web Push 上线提醒，见「协议」推送小节）
 - `functions/devices.js` — Pages Function：`GET /devices` 读 KV 列出设备
+- `functions/push/` — Pages Function：Web Push 端点（`key.js` VAPID 公钥 / `subscribe.js` 订阅 /
+  `unsubscribe.js` 退订）
 - `public/index.html` — 静态页（单文件、无构建、无框架、移动端友好，5s 自动刷新；座舱 / Apple
   双风格 + 深浅色 + 中英双语，见下「UI 约定」）
+- `public/manifest.webmanifest` — PWA 清单（standalone 显示、图标、主题色，「添加到主屏幕」用）
+- `public/_headers` — Pages 静态安全响应头（nosniff / Referrer-Policy / X-Frame-Options / Permissions-Policy）
+- `public/sw.js` — Service Worker：`push` 事件弹系统通知，`notificationclick` 聚焦已开页面或新开首页
 - `public/favicon.png` — 标签页图标（与 DD `web_ui/frontend/public/favicon.png`、DC
   `Firmware/MUS4_FW/libraries/mus4_web/src/WebConsoleFavicon.h` 内的同一张 200x200 helmet logo，
   三处 md5 一致）
 - `wrangler.toml` — Pages 配置（KV binding `FIND_CAR_KV`）
 - `worker.js` — 早期 token 版 Worker 实现，**已废弃**（现网走 Pages Functions，保留仅供参考）
+- `.verify/verify-extra.js` — Apple 象限补充验证（10 项；配 `stub-empty.py` 8098 空态桩 /
+  `stub-error.py` 8097 错误态桩）
+- `.verify/push-unit.mjs` — 推送端点纯 Node 单测（node ≥ 18，无浏览器无网络，VAPID 密钥对现场生成）
+- `.github/workflows/verify.yml` — CI：push 到 `main` 时自动跑 `verify.js` + `verify-extra.js`
 - `README.md` — 本说明
 
 ## 部署
@@ -63,10 +73,19 @@ npx wrangler pages deploy public --project-name find-dkc
   居中半透明胶囊（`backdrop-filter` 模糊，`prefers-reduced-transparency` 退实色）；复制成功时按钮
   图标短暂变绿勾 1.2s；`:focus-visible` 改 3px 半透明 accent 聚焦环；表格字号 14→15px；补
   `-webkit-tap-highlight-color: transparent` 与 `-webkit-text-size-adjust: 100%`。
+  2026-09-17 第四轮：离线设备行不再整行跳转（离线时控制台必不可达——恢复默认指针、收编右缘
+  chevron、行按压不染色，整行点击只 toast「设备离线，控制台当前不可达」；行内 IP 链接仍可显式
+  点按）；吸顶页头底部 hairline 改为滚离顶部（`scrollY > 2`，JS 加 `.scrolled` 类）才浮现，顶部
+  透明、.2s 淡入（apple.com 同款）；补 PWA 清单（`manifest.webmanifest`，「添加到主屏幕」后独立
+  窗口运行）与随系统深浅色的 `theme-color`、OG/Twitter 分享 meta；页头新增「上线提醒」铃铛圆钮
+  （Web Push 订阅开关，与主题/语言圆钮同一套按钮语言：订阅开启态染 accent 色，不可用/权限被
+  拒绝态呈半透明斜杠铃，不支持 PushManager 的浏览器——含未「添加到主屏幕」的 iOS Safari——
+  直接隐藏不占位）。
 - **页头**：左侧 32px 圆角 logo（同一张 helmet logo，点进官网）+ 标题；右侧风格分段切换器、页面版本徽标、
-  GitHub 图标链接、深浅色圆钮（32px）、语言圆钮（32px，显示 `中` / `EN`）。Apple 象限下切换器呈 iOS 分段
+  GitHub 图标链接、上线提醒铃铛圆钮（32px，Web Push 订阅开关）、深浅色圆钮（32px）、语言圆钮
+  （32px，显示 `中` / `EN`）。Apple 象限下切换器呈 iOS 分段
   控件样（灰底圆角胶囊轨道 + 白色/灰选中滑块），座舱象限下沿用座舱按钮语言。版本徽标样式同 DD
-  `VersionBadge` / DC `.version`，当前 `v1.3.1`；改动本页时同步递增 `index.html` 里的 `#page-version`。
+  `VersionBadge` / DC `.version`，当前 `v1.4.0`；改动本页时同步递增 `index.html` 里的 `#page-version`。
 - **深浅色**：默认跟随系统 `prefers-color-scheme`（首屏内联脚本防闪烁），手动切换只在当前页面
   视图内生效（不持久化），刷新后重新跟随系统——与 DD `ThemeSwitcher` / DC `themeButton` 一致。
 - **语言**：`zh` / `en` 全量词条，首次访问跟随浏览器语言（`zh*` → 中文，其余英文），手动切换写入
@@ -84,7 +103,17 @@ npx wrangler pages deploy public --project-name find-dkc
   不带参数时硬刷新也可能不重新请求，导致「页面上看不到图标」。
 - **本地验证**：`backups/`（不入部署）存座舱原版备份；`.verify/` 内有桩服务（`stub.py`，8099 端口
   映射 `/devices`）与 Playwright 脚本（`verify.js` 本地 17 项 / `verify-online.js` 线上 7 项），
-  含座舱象限计算样式与备份版逐值对比。
+  含座舱象限计算样式与备份版逐值对比。本地跑法：
+
+  ```bash
+  python3 .verify/stub.py &          # 主桩 8099（另起 stub-empty.py 8098 空态 / stub-error.py 8097 错误态）
+  NODE_PATH=<playwright 所在 node_modules> node .verify/verify.js        # 17 项：截图矩阵 + 座舱逐值对比 + 行为
+  NODE_PATH=<playwright 所在 node_modules> node .verify/verify-extra.js  # 10 项：整行跳转 / 绿勾 / 转环 / 空错态截图
+  node .verify/push-unit.mjs         # 推送端点纯 Node 单测（node ≥ 18，无浏览器无网络）
+  ```
+
+  push 到 `main` 时 `.github/workflows/verify.yml` 自动跑 `verify.js` + `verify-extra.js`
+  （CI 置 `FDC_CI=1` 用 Playwright 自带 chromium，本地默认用本机 Chrome）。
 
 ## 协议
 
@@ -114,6 +143,20 @@ npx wrangler pages deploy public --project-name find-dkc
   排序：在线优先，其次 hostname / device_id。
 
 - 所有响应带 CORS 头；`OPTIONS` 预检返回 204；其它路径 404；参数缺失/JSON 解析失败 400；异常 500。
+
+### 设备上线提醒（Web Push）
+
+- `GET /push/key` → 200 `{"key":"<VAPID 公钥 base64url>"}`；未配置时 503（前端据此把铃铛置灰）。
+- `POST /push/subscribe`，body = PushSubscription JSON
+  （`{"endpoint":"https://…","keys":{"p256dh":"…","auth":"…"}}`）→ 200 `{"ok":true}`；
+  非法订阅 400。KV 键 `pushsub:<endpoint 的 sha256 hex>`，值 = 订阅 JSON 原文，无 TTL
+  （直到退订或推送失效被清理）。
+- `POST /push/unsubscribe`，body `{"endpoint":"https://…"}` → 200 `{"ok":true}`（幂等：键不存在也 200）。
+- **扇出时机**：`POST /report` 时设备「旧不在线 → 新在线」跳变，KV 写完后经 `waitUntil` 后台向全部
+  `pushsub:` 订阅发**无负载 tickle**（不带 body、不加密，Authorization 头为 VAPID JWT，ES256）；
+  订阅失效（404/410）顺手删 KV 键；推送的任何失败都被吞掉，绝不影响 `/report` 响应。
+- VAPID 密钥只存在于 Cloudflare Pages secrets：`VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`，由
+  `wrangler pages secret put` 配置，**仓库零密钥材料**。
 
 ## 心跳节奏与 KV 免费额度
 

@@ -18,7 +18,7 @@ function check(name, ok, detail) {
 }
 
 (async () => {
-  const browser = await chromium.launch({ channel: 'chrome' });
+  const browser = await chromium.launch(process.env.FDC_CI ? {} : { channel: 'chrome' });
 
   // ---------- 1) 截图矩阵 ----------
   for (const ui of ['apple', 'cockpit']) {

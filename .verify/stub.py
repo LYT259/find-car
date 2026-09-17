@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """FDC 本地验证桩：静态服务 public/，/devices 返回固定两台设备（延迟 700ms 以便截骨架屏），
-/backup/index.html 指向 backups/ 里的座舱备份版用于计算样式对比。仅本地验证用，不参与部署。"""
+/backup/index.html 指向 backups/ 里的座舱备份版用于计算样式对比。仅本地验证用，不参与部署。
+端口可用环境变量 FDC_PORT 覆盖（默认 8099）。"""
 import json
+import os
 import time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
@@ -9,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PUBLIC = ROOT / "public"
 BACKUP = sorted((ROOT / "backups").glob("index-cockpit-*.html"))[-1]
+PORT = int(os.environ.get("FDC_PORT", "8099"))
 NOW = int(time.time() * 1000)
 DEVICES = {
     "devices": [
@@ -71,5 +74,5 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"serving {PUBLIC} on http://127.0.0.1:8099 (backup={BACKUP.name})")
-    ThreadingHTTPServer(("127.0.0.1", 8099), Handler).serve_forever()
+    print(f"serving {PUBLIC} on http://127.0.0.1:{PORT} (backup={BACKUP.name})")
+    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

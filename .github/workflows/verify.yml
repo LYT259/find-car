@@ -1,0 +1,55 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 安装 Playwright 到临时目录（不污染仓库）
+        run: npm install --prefix /tmp/fdc-pw playwright@latest
+
+      - name: 安装 Playwright 自带 Chromium 及系统依赖
+        run: /tmp/fdc-pw/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: 后台启动三个验证桩（8099 主桩 / 8098 空桩 / 8097 错误桩）
+        run: |
+          nohup python3 .verify/stub.py >/tmp/stub-main.log 2>&1 &
+          nohup python3 .verify/stub-empty.py >/tmp/stub-empty.log 2>&1 &
+          nohup python3 .verify/stub-error.py >/tmp/stub-error.log 2>&1 &
+
+      - name: 等待主桩 8099 就绪
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8099/ >/dev/null; then
+              echo "stub 8099 ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "== stub-main.log ==" && cat /tmp/stub-main.log || true
+          echo "主桩 8099 未就绪" >&2
+          exit 1
+
+      - name: 主验证（17 项：截图矩阵 + 座舱对比 + 行为检查）
+        env:
+          FDC_CI: "1"
+          NODE_PATH: /tmp/fdc-pw/node_modules
+        run: node .verify/verify.js
+
+      - name: 补充验证（10 项）
+        env:
+          FDC_CI: "1"
+          NODE_PATH: /tmp/fdc-pw/node_modules
+        run: node .verify/verify-extra.js

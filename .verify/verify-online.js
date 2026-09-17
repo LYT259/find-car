@@ -7,7 +7,7 @@ const BASE = 'https://find-dkc.pages.dev';
 const SHOTS = path.join(__dirname, 'shots');
 
 (async () => {
-  const browser = await chromium.launch({ channel: 'chrome' });
+  const browser = await chromium.launch(process.env.FDC_CI ? {} : { channel: 'chrome' });
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, locale: 'zh-CN', colorScheme: 'dark' });
   const page = await ctx.newPage();
   let failed = 0;
