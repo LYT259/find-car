@@ -782,7 +782,7 @@
           <button class="uiSegBtn" type="button" data-ui-value="cockpit" data-i18n="ui.cockpit"></button>
           <button class="uiSegBtn" type="button" data-ui-value="apple">Apple</button>
         </div>
-        <span class="version" id="page-version">v1.4.0</span>
+        <span class="version" id="page-version">v1.4.1</span>
         <a class="ghLink" href="https://github.com/DonkeyDrift/DonkeyDrift" target="_blank" rel="noopener noreferrer"
            data-i18n-aria="aria.github" data-i18n-title="aria.github">
           <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
@@ -892,7 +892,7 @@
       'toast.offline': '设备离线，控制台当前不可达',
       'push.enable': '开启上线提醒',
       'push.disable': '关闭上线提醒',
-      'push.on.toast': '已开启上线提醒',
+      'push.on.toast': '已开启上线提醒，稍候将收到一条测试通知',
       'push.off.toast': '已关闭上线提醒',
       'push.denied': '通知权限被系统拒绝，请在浏览器设置中开启',
       'push.unavailable': '推送服务不可用',
@@ -939,7 +939,7 @@
       'toast.offline': 'Device is offline; console is unreachable',
       'push.enable': 'Turn on online alerts',
       'push.disable': 'Turn off online alerts',
-      'push.on.toast': 'Online alerts on',
+      'push.on.toast': 'Online alerts on — a test notification is on its way',
       'push.off.toast': 'Online alerts off',
       'push.denied': 'Notifications are blocked; enable them in browser settings',
       'push.unavailable': 'Push service unavailable',
@@ -1278,7 +1278,8 @@
 
   // ---------------- 设备上线提醒（Web Push 客户端） ----------------
   // 后端合约（functions/push/）：GET /push/key → 200 {"key": VAPID 公钥}（未配置 503）；
-  // POST /push/subscribe body = PushSubscription JSON → 200 {"ok":true}；
+  // POST /push/subscribe body = PushSubscription JSON → 200 {"ok":true}（落库后服务端会
+  // 立即回发一条欢迎 tickle，当场证明推送全链路可用）；
   // POST /push/unsubscribe body = {"endpoint"} → 200。/sw.js（push → 系统通知，
   // notificationclick → 打开/聚焦本页）由后端侧提供。iOS 仅「添加到主屏幕」后可用，
   // 浏览器内 Safari 无 PushManager，走不支持分支直接隐藏铃铛（不占位）。

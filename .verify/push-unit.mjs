@@ -10,6 +10,7 @@
 //   ⑤ 扇出遇 410 响应删除订阅键
 //   ⑥ env 缺 VAPID 私钥时 /report 正常返回且零扇出
 //   ⑦ /push/key 正常返回公钥 / 未配置 503（附 CORS 头检查）
+//   ⑧ /push/subscribe 成功即发欢迎 tickle（vapid 头正确、201 留键、410 删键）
 //
 // VAPID 密钥对在测试内现场 generateKey 生成，仓库与文件中不含任何真实密钥材料。
 
@@ -214,6 +215,7 @@ function makeEnv(kv) {
 {
   const kv = makeKv();
   const env = { FIND_CAR_KV: kv };
+  resetFetch();
 
   const ok = await subscribePost({ request: postJson('/push/subscribe', SUBSCRIPTION), env });
   const subKey = `pushsub:${await sha256Hex(SUB_ENDPOINT)}`;
@@ -233,6 +235,7 @@ function makeEnv(kv) {
   const badJson = await subscribePost({ request: postJson('/push/subscribe', 'not json{'), env });
   check('③ 非法 JSON 返回 400', badJson.status === 400);
   check('③ 非法请求均未写入 KV（仍只有 1 个订阅键）', [...kv.map.keys()].filter((k) => k.startsWith('pushsub:')).length === 1);
+  check('③ 未配置 VAPID 密钥时订阅不发 tickle（零 fetch、无需 waitUntil）', fetchCalls.length === 0);
 
   // ④ /push/unsubscribe：删除对应订阅键（复用本场景的 KV）
   const un = await unsubscribePost({ request: postJson('/push/unsubscribe', { endpoint: SUB_ENDPOINT }), env });
@@ -280,6 +283,33 @@ function makeEnv(kv) {
   const missing = await pushKeyGet({ env: {} });
   const missingBody = await missing.json();
   check('⑦ 未配置时返回 503 {"error":"push not configured"}', missing.status === 503 && missingBody.error === 'push not configured');
+}
+
+// ⑧ 订阅成功即发欢迎 tickle：waitUntil 一次、fetch 一次、Authorization 正确；410 顺手删键
+{
+  const kv = makeKv();
+  const env = makeEnv(kv);
+  resetFetch(201);
+
+  const w = makeWaitUntil();
+  const ok = await subscribePost({ request: postJson('/push/subscribe', SUBSCRIPTION), env, waitUntil: w.waitUntil });
+  const subKey = `pushsub:${await sha256Hex(SUB_ENDPOINT)}`;
+  check('⑧ 订阅响应 200 {"ok":true} 且订阅键已写入', ok.status === 200 && kv.map.has(subKey));
+  check('⑧ waitUntil 收到一次欢迎 tickle', w.pending.length === 1);
+  await Promise.all(w.pending);
+  check('⑧ 恰好发出一个推送请求且目标是新订阅 endpoint', fetchCalls.length === 1 && fetchCalls[0]?.url === SUB_ENDPOINT);
+  const authHeader = fetchCalls[0]?.init.headers?.Authorization ?? '';
+  check('⑧ Authorization 形如 vapid t=<jwt>, k=<pubkey> 且 k=公钥', /^vapid t=[^,]+, k=/.test(authHeader) && authHeader.endsWith(`, k=${VAPID_PUBLIC_KEY}`));
+  check('⑧ 201 时订阅键保留', kv.map.has(subKey));
+
+  // 推送服务判定订阅已死（410）：欢迎 tickle 顺手删掉刚写入的键
+  const kv2 = makeKv();
+  const env2 = makeEnv(kv2);
+  resetFetch(410);
+  const w2 = makeWaitUntil();
+  await subscribePost({ request: postJson('/push/subscribe', SUBSCRIPTION), env: env2, waitUntil: w2.waitUntil });
+  await Promise.all(w2.pending);
+  check('⑧ 410 时刚写入的订阅键被删除', fetchCalls.length === 1 && !kv2.map.has(subKey));
 }
 
 // ---------- 汇总 ----------

@@ -14,8 +14,9 @@ launcher 自身端口 8090（点 IP 落到 launcher 菜单页，可一键「打�
 - `functions/report.js` — Pages Function：`POST /report` 写 KV（设备「旧不在线 → 新在线」跳变时
   后台扇出 Web Push 上线提醒，见「协议」推送小节）
 - `functions/devices.js` — Pages Function：`GET /devices` 读 KV 列出设备
-- `functions/push/` — Pages Function：Web Push 端点（`key.js` VAPID 公钥 / `subscribe.js` 订阅 /
-  `unsubscribe.js` 退订）
+- `functions/push/` — Pages Function：Web Push 端点（`key.js` VAPID 公钥 / `subscribe.js` 订阅（成功即回发
+  欢迎 tickle，当场证明推送链路可用）/ `unsubscribe.js` 退订；`_vapid.js` 为 report.js 与 subscribe.js
+  共用的 VAPID 签名 + tickle 发送模块，下划线前缀不成路由）
 - `public/index.html` — 静态页（单文件、无构建、无框架、移动端友好，5s 自动刷新；座舱 / Apple
   双风格 + 深浅色 + 中英双语，见下「UI 约定」）
 - `public/manifest.webmanifest` — PWA 清单（standalone 显示、图标、主题色，「添加到主屏幕」用）
@@ -85,7 +86,7 @@ npx wrangler pages deploy public --project-name find-dkc
   GitHub 图标链接、上线提醒铃铛圆钮（32px，Web Push 订阅开关）、深浅色圆钮（32px）、语言圆钮
   （32px，显示 `中` / `EN`）。Apple 象限下切换器呈 iOS 分段
   控件样（灰底圆角胶囊轨道 + 白色/灰选中滑块），座舱象限下沿用座舱按钮语言。版本徽标样式同 DD
-  `VersionBadge` / DC `.version`，当前 `v1.4.0`；改动本页时同步递增 `index.html` 里的 `#page-version`。
+  `VersionBadge` / DC `.version`，当前 `v1.4.1`；改动本页时同步递增 `index.html` 里的 `#page-version`。
 - **深浅色**：默认跟随系统 `prefers-color-scheme`（首屏内联脚本防闪烁），手动切换只在当前页面
   视图内生效（不持久化），刷新后重新跟随系统——与 DD `ThemeSwitcher` / DC `themeButton` 一致。
 - **语言**：`zh` / `en` 全量词条，首次访问跟随浏览器语言（`zh*` → 中文，其余英文），手动切换写入
@@ -150,7 +151,9 @@ npx wrangler pages deploy public --project-name find-dkc
 - `POST /push/subscribe`，body = PushSubscription JSON
   （`{"endpoint":"https://…","keys":{"p256dh":"…","auth":"…"}}`）→ 200 `{"ok":true}`；
   非法订阅 400。KV 键 `pushsub:<endpoint 的 sha256 hex>`，值 = 订阅 JSON 原文，无 TTL
-  （直到退订或推送失效被清理）。
+  （直到退订或推送失效被清理）。**落库后经 `waitUntil` 立即回发一条欢迎 tickle**——用户点完铃铛
+  几秒内收到真实系统通知，当场证明「VAPID 配置 → 推送服务 → SW 弹窗」全链路可用（未配置 VAPID
+  密钥时跳过，失败吞掉不影响响应）。
 - `POST /push/unsubscribe`，body `{"endpoint":"https://…"}` → 200 `{"ok":true}`（幂等：键不存在也 200）。
 - **扇出时机**：`POST /report` 时设备「旧不在线 → 新在线」跳变，KV 写完后经 `waitUntil` 后台向全部
   `pushsub:` 订阅发**无负载 tickle**（不带 body、不加密，Authorization 头为 VAPID JWT，ES256）；
