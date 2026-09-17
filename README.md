@@ -57,10 +57,16 @@ npx wrangler pages deploy public --project-name find-dkc
   点在链接/按钮上或划选文本时不触发，座舱象限行不可点保持原样），IP 链接带「打开 Drifter Console /
   DonkeyDrifter」悬停提示；在线状态点 2.4s 呼吸脉冲光环；空态带居中信号图标；主题切换 320ms
   交叉淡化；`prefers-reduced-motion` 下关闭脉冲/骨架呼吸/行动画、过渡缩至近乎即时。
+  2026-09-17 第三轮：主按钮改全圆角胶囊（9999px），手动刷新时显示 iOS 活动指示器转环
+  （reduced-motion 下保留——属状态反馈非装饰）；行分隔线改 tr 背景渐变的 inset-grouped 同款
+  （左缩 14px 对齐文字、右缘贯通，桌面表格与移动卡片同一条规则，替代 td 下边框）；toast 改底部
+  居中半透明胶囊（`backdrop-filter` 模糊，`prefers-reduced-transparency` 退实色）；复制成功时按钮
+  图标短暂变绿勾 1.2s；`:focus-visible` 改 3px 半透明 accent 聚焦环；表格字号 14→15px；补
+  `-webkit-tap-highlight-color: transparent` 与 `-webkit-text-size-adjust: 100%`。
 - **页头**：左侧 32px 圆角 logo（同一张 helmet logo，点进官网）+ 标题；右侧风格分段切换器、页面版本徽标、
   GitHub 图标链接、深浅色圆钮（32px）、语言圆钮（32px，显示 `中` / `EN`）。Apple 象限下切换器呈 iOS 分段
   控件样（灰底圆角胶囊轨道 + 白色/灰选中滑块），座舱象限下沿用座舱按钮语言。版本徽标样式同 DD
-  `VersionBadge` / DC `.version`，当前 `v1.3.0`；改动本页时同步递增 `index.html` 里的 `#page-version`。
+  `VersionBadge` / DC `.version`，当前 `v1.3.1`；改动本页时同步递增 `index.html` 里的 `#page-version`。
 - **深浅色**：默认跟随系统 `prefers-color-scheme`（首屏内联脚本防闪烁），手动切换只在当前页面
   视图内生效（不持久化），刷新后重新跟随系统——与 DD `ThemeSwitcher` / DC `themeButton` 一致。
 - **语言**：`zh` / `en` 全量词条，首次访问跟随浏览器语言（`zh*` → 中文，其余英文），手动切换写入
