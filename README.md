@@ -27,7 +27,8 @@ launcher 自身端口 8090（点 IP 落到 launcher 菜单页，可一键「打�
   三处 md5 一致）
 - `wrangler.toml` — Pages 配置（KV binding `FIND_CAR_KV`）
 - `worker.js` — 早期 token 版 Worker 实现，**已废弃**（现网走 Pages Functions，保留仅供参考）
-- `.verify/verify-extra.js` — Apple 象限补充验证（10 项；配 `stub-empty.py` 8098 空态桩 /
+- `.verify/verify-extra.js` — Apple 象限补充验证（39 项：整行跳转 / 绿勾 / 转环 / 空错态截图 +
+  2026-09-18 新增对比度实算、44×44 命中区、聚焦环、兜底媒体特性（CDP 实跑）、错误态本地化等；配 `stub-empty.py` 8098 空态桩 /
   `stub-error.py` 8097 错误态桩）
 - `.verify/push-unit.mjs` — 推送端点纯 Node 单测（node ≥ 18，无浏览器无网络，VAPID 密钥对现场生成）
 - `.github/workflows/verify.yml` — CI：push 到 `main` 时自动跑 `verify.js` + `verify-extra.js`
@@ -80,13 +81,58 @@ npx wrangler pages deploy public --project-name find-dkc
   透明、.2s 淡入（apple.com 同款）；补 PWA 清单（`manifest.webmanifest`，「添加到主屏幕」后独立
   窗口运行）与随系统深浅色的 `theme-color`、OG/Twitter 分享 meta；页头新增「上线提醒」铃铛圆钮
   （Web Push 订阅开关，与主题/语言圆钮同一套按钮语言：订阅开启态染 accent 色，不可用/权限被
-  拒绝态呈半透明斜杠铃，不支持 PushManager 的浏览器——含未「添加到主屏幕」的 iOS Safari——
-  直接隐藏不占位）。
+  2026-09-18 第五轮（Apple 深化，一次性对齐 `APPLE-SPEC-V1`）：
+  ① **语义色双轨**：新增 `--ok-text` / `--warn-text` / `--bad-text`（浅 `#1a7f37` / `#c93400` / `#d70015`，
+  深 `#30d158` / `#ff9f0a` / `#ff453a`）。圆点、描边、图标底等**填充**继续用 `--ok/--warn/--bad`
+  （系统色），**文字**（`.status-online`、错误横幅、复制成功绿勾、离线行文字）改用 text 变体——
+  浅色在线绿字 2.22:1 → 5.08:1。主按钮填充保持 Apple 系统蓝（浅 `#0071e3` / 深 `#0a84ff`），
+  这是「对齐 Apple 原生」优先于 AA 的刻意取舍（白字 4.70 / 3.65:1）。
+  ② **灰阶达标**：浅色 `--text-3` .62→**.72**（4.53:1）、`--text-4` .45→**.62**（3.50:1）；深色
+  `--text-4` .42→**.52**（4.93:1）；`--version-ink` 跟随 text-4。规则：结构性文字（`th`、移动端
+  `td::before` 字段名、`tr.offline td`）至少 text-3，只有纯 meta（`#updated`、`.version`、`.last-seen`）
+  才用 text-4；分段控件未选段是控件标签，用 text-2。深色离线状态点 `#636366`→`#8e8e93`（2.84 → 5.22:1）。
+  页头圆钮底色（`rgba(118,118,128,.12)` 叠在画布上）比画布更暗，浅色 `--btn-text` .72→**.80**
+  （语言钮 4.21 → 5.16:1，复制键 4.39 → 5.44:1）；铃铛不可用态 `opacity` .45→**.75**（禁用态也要读得清，2.5 → 3.15:1，
+  同时保留斜杠铃图标的第二通道）。
+  ③ **聚焦环不透明**：`:focus-visible` 改 `3px solid`（浅 `#0066cc` / 深 `#2997ff`）+ `outline-offset: 2px`
+  （半透明环实测仅 1.86–2.31:1，非文本需 ≥3:1）；`:focus-visible` 与 `:hover` 拆开——**聚焦不再改主按钮
+  填充色**（此前聚焦会把主按钮提亮一档）。行获得键盘焦点时环内缩（面板 `overflow:hidden` 会裁掉外环）。
+  ④ **触控目标 ≥44×44**：`.themeButton / .langButton / .bellButton / .copyBtn / .ghLink` 用 `::after`
+  铺不可见命中区（视觉尺寸不变）；`.uiSegBtn` 只在纵向扩到 44（段与段相邻，段宽 48–58 已 ≥44）；
+  主按钮高 38→44。相邻冲突按「只在不相邻的轴扩展 + 可见间距 ≥8px」处理：复制键与同行 IP 链接
+  可见间距 6→10px（命中区左缘落在链接右缘之外），页头控件间距 12→14px（32px 圆钮的命中区相接不互吞），
+  整行点击额外做了一次命中区几何排除，落在复制键 44×44 内的点击不会触发整行跳转。
+  ⑤ **iOS 控件尺寸**：分段轨道 28→32 / 段 24→28；主按钮宽度按该语言最宽标签固定
+  （`min-width` 中文 118px / 英文 148px）——「刷新 → 查找中…」宽度跳变 43.98px → **0**，右侧 meta 不再位移。
+  ⑥ **错误态**：非 2xx 一律映射本地化词条（`page.errorService`「服务暂时不可用，请稍后重试」），
+  后端原文（如 `KV unavailable`）只 `console.warn`；错误且无上次数据时把空面板整个收起（原先留
+  366×96 空白卡）。
+  ⑦ **轮询不再摧毁焦点**：行签名（设备集 + 在线状态）不变时只 patch 变化的单元格文本/属性、不重挂载
+  tbody；必须重挂载时按「哪台设备 + 行还是复制键」把焦点放回原处（实测 5.8s 后焦点从 BODY 变为
+  仍停在复制的按钮上）。设备行补 `tabindex="0"`，Enter/Space 与点击同一行为（键盘可达）。
+  ⑧ **toast**：`inset-inline: 18px; margin-inline: auto; width: fit-content; max-width: none`，
+  长文案不再被 50vw 卡死（390 下 195px 3 行 → 354px 2 行），`max-width` 声明真正可达；
+  多行内容自动换 16px 圆角（`.multiline`，胶囊是单行形状），单行仍是 9999px 胶囊。
+  ⑨ **骨架屏不跳动**：占位块几何改成与真实列表同高（栏头行 37.5px = `th` 行高、设备行 50px、
+  移动卡片 166px），行数按上次拉到的设备数（`localStorage['findcar.ui.deviceCount']` 记忆；冷启动桌面估
+  3 台 = 20 条占位条、移动估 2 台），并同时占住工具条 meta 行——390 首屏位移 +18px / 高度 +202px →
+  **0 / 0**。
+  ⑩ **离线行链接**：改 `aria-disabled="true"` + `tabindex="-1"`，点按只给离线 toast、不跳不可达控制台，
+  颜色从 text-4 提到 text-3。
+  ⑪ **chevron 图标化**：行右缘指示符由 `content:"›"` 文本字符（浅色 2.40:1、字重不受控）换成
+  13px SVG 掩膜图标（`--chevron` + `mask-image`，色取 text-3／hover 提为 text-2）。
+  ⑫ **行反馈**：hover `rgba(255,255,255,.045)→.06`、按压 `.09→.11`（浅色 `.03→.05` / `.055→.08`）；
+  IP 链接补自身 `:active`（opacity .6），不再只有整行染色。
+  ⑬ **兜底**：`prefers-contrast: more`（文字提到 label/secondary、发丝线 .10→.30、卡片加 1px 实描边、
+  材质退实色）、`forced-colors: active`（用 `CanvasText` 画回分隔线与状态点——它们本来就是背景色/背景图
+  画的，强制配色下会整块消失）、`<meta viewport>` 加 `viewport-fit=cover` 且页头 padding-top /
+  toast bottom 加 `env(safe-area-inset-*)`（manifest 已是 standalone + black-translucent）；手动切主题时
+  同步 `meta[name=theme-color]`（此前只认系统偏好，手动切换后不跟随）；15px 表格字补 `-.01em` 字距。
 - **页头**：左侧 32px 圆角 logo（同一张 helmet logo，点进官网）+ 标题；右侧风格分段切换器、页面版本徽标、
   GitHub 图标链接、上线提醒铃铛圆钮（32px，Web Push 订阅开关）、深浅色圆钮（32px）、语言圆钮
   （32px，显示 `中` / `EN`）。Apple 象限下切换器呈 iOS 分段
   控件样（灰底圆角胶囊轨道 + 白色/灰选中滑块），座舱象限下沿用座舱按钮语言。版本徽标样式同 DD
-  `VersionBadge` / DC `.version`，当前 `v1.4.1`；改动本页时同步递增 `index.html` 里的 `#page-version`。
+  `VersionBadge` / DC `.version`，当前 `v1.5.0`；改动本页时同步递增 `index.html` 里的 `#page-version`。
 - **深浅色**：默认跟随系统 `prefers-color-scheme`（首屏内联脚本防闪烁），手动切换只在当前页面
   视图内生效（不持久化），刷新后重新跟随系统——与 DD `ThemeSwitcher` / DC `themeButton` 一致。
 - **语言**：`zh` / `en` 全量词条，首次访问跟随浏览器语言（`zh*` → 中文，其余英文），手动切换写入
@@ -109,7 +155,8 @@ npx wrangler pages deploy public --project-name find-dkc
   ```bash
   python3 .verify/stub.py &          # 主桩 8099（另起 stub-empty.py 8098 空态 / stub-error.py 8097 错误态）
   NODE_PATH=<playwright 所在 node_modules> node .verify/verify.js        # 17 项：截图矩阵 + 座舱逐值对比 + 行为
-  NODE_PATH=<playwright 所在 node_modules> node .verify/verify-extra.js  # 10 项：整行跳转 / 绿勾 / 转环 / 空错态截图
+  NODE_PATH=<playwright 所在 node_modules> node .verify/verify-extra.js  # 39 项：整行跳转 / 绿勾 / 转环 / 空错态截图
+                                                                          #      + 对比度实算 / 命中区 / 聚焦环 / 兜底媒体特性（CDP 实跑）/ 错误态本地化
   node .verify/push-unit.mjs         # 推送端点纯 Node 单测（node ≥ 18，无浏览器无网络）
   ```
 
