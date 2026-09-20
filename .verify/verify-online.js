@@ -1,5 +1,5 @@
 /* FDC 线上实测：https://find-dkc.pages.dev/
- * 默认 Apple 风格、切换器可用、真实设备渲染正常、线上小字已删
+ * Apple 为唯一风格（座舱切换器已移除）、旧 localStorage 键 findcar.ui.style 被忽略、真实设备渲染正常、线上小字已删
  */
 const { chromium } = require('playwright');
 const path = require('path');
@@ -17,8 +17,14 @@ const SHOTS = path.join(__dirname, 'shots');
   };
 
   await page.goto(BASE + '/', { waitUntil: 'networkidle' });
-  const ui = await page.evaluate(() => document.documentElement.dataset.ui);
-  check('线上默认风格为 apple', ui === 'apple', `data-ui=${ui}`);
+  const switcher = await page.evaluate(() => ({
+    hasSeg: !!document.querySelector('.uiSeg'),
+    hasSegBtn: !!document.querySelector('.uiSegBtn'),
+    ui: document.documentElement.dataset.ui,
+  }));
+  check('线上无座舱切换器（Apple 唯一风格）',
+    !switcher.hasSeg && !switcher.hasSegBtn && switcher.ui === undefined,
+    `data-ui=${switcher.ui}`);
 
   await page.waitForSelector('tbody tr', { timeout: 15000 });
   const rows = await page.locator('tbody tr').count();
@@ -35,17 +41,12 @@ const SHOTS = path.join(__dirname, 'shots');
 
   await page.screenshot({ path: path.join(SHOTS, 'online-apple-dark-zh-1280.png') });
 
-  // 切换器线上可用：apple → cockpit → apple
-  await page.click('.uiSegBtn[data-ui-value="cockpit"]');
-  const cockpitBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  check('线上切座舱（bg #101318）', cockpitBg === 'rgb(16, 19, 24)', cockpitBg);
-  await page.screenshot({ path: path.join(SHOTS, 'online-cockpit-dark-zh-1280.png') });
-  await page.click('.uiSegBtn[data-ui-value="apple"]');
-  // 2026-09-16 第二轮 Apple 细修起：cockpit→apple 的 body 背景有刻意为之的 320ms 交叉淡化，
-  // 立即读计算样式会拿到过渡中间值，等动画结束再断言
-  await page.waitForTimeout(450);
-  const backBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  check('线上切回 Apple', backBg === 'rgb(0, 0, 0)', backBg);
+  // v1.6.0 起页面不再读取 findcar.ui.style：写入旧值 cockpit 后重载，仍为 Apple 深色 #000
+  await page.evaluate(() => localStorage.setItem('findcar.ui.style', 'cockpit'));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('tbody tr', { timeout: 15000 });
+  const legacyBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  check('线上残留 findcar.ui.style=cockpit 被忽略', legacyBg === 'rgb(0, 0, 0)', legacyBg);
 
   // 真实 /devices 契约
   const resp = await page.evaluate(async () => {

@@ -1,6 +1,6 @@
 /* FDC Apple 象限补充验证（verify.js 未覆盖），仓库常驻、仅本地验证用，不参与部署：
  * 1) apple 象限桌面/移动端整行点击 → window.open 设备控制台 URL
- * 2) 点复制按钮不触发行跳转；cockpit 象限行点击不跳转（交互原样）
+ * 2) 点复制按钮不触发行跳转（原 cockpit 象限回归块已随 v1.6.0 座舱移除一并删除）
  * 3) 复制成功绿勾（.copied + icoCheck 可见，1.2s 后自动消失）、
  *    刷新转环（.loading + btnSpin 可见，完成后复位回「刷新」）
  * 4) 空态（stub-empty.py）/ 错误态（stub-error.py）/ toast 胶囊 / 转环 截图 → .verify/shots/
@@ -39,7 +39,6 @@ function check(name, ok, detail) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, locale: 'zh-CN' });
     const page = await ctx.newPage();
     await page.addInitScript(() => {
-      window.localStorage.setItem('findcar.ui.style', 'apple');
       window.__opened = [];
       window.open = function (url) { window.__opened.push(String(url)); return null; };
     });
@@ -96,37 +95,13 @@ function check(name, ok, detail) {
     await ctx.close();
   }
 
-  // 2) cockpit：行点击不跳转、转环/绿勾不出现（基座隐藏）
-  {
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, locale: 'zh-CN' });
-    const page = await ctx.newPage();
-    await page.addInitScript(() => window.localStorage.setItem('findcar.ui.style', 'cockpit'));
-    await page.goto(`http://127.0.0.1:${PORT_MAIN}/`, { waitUntil: 'networkidle' });
-    await page.waitForSelector('tbody tr');
-    let popupCount = 0;
-    ctx.on('page', () => { popupCount += 1; });
-    await page.click('tbody tr:first-child td.name');
-    await page.waitForTimeout(700);
-    const cursor = await page.evaluate(() => getComputedStyle(document.querySelector('tbody tr')).cursor);
-    check('cockpit 行点击不跳转（交互原样）', popupCount === 0 && cursor !== 'pointer', `popups=${popupCount} cursor=${cursor}`);
-    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.click('.copyBtn >> nth=0');
-    await page.waitForTimeout(300);
-    const cock = await page.evaluate(() => {
-      const btn = document.querySelector('.copyBtn');
-      return getComputedStyle(btn.querySelector('.icoCheck')).display === 'none'
-        && getComputedStyle(btn.querySelector('.icoCopy')).display !== 'none';
-    });
-    check('cockpit 复制不出现绿勾换图标（视觉原样）', cock);
-    await ctx.close();
-  }
+  // 2)（原 cockpit 回归块已随 v1.6.0 座舱移除一并删除）
 
   // 3) apple 移动端整行点击
   {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'zh-CN' });
     const page = await ctx.newPage();
     await page.addInitScript(() => {
-      window.localStorage.setItem('findcar.ui.style', 'apple');
       window.__opened = [];
       window.open = function (url) { window.__opened.push(String(url)); return null; };
     });
@@ -195,7 +170,6 @@ function check(name, ok, detail) {
   // 5.1 浅色语义色文字：在线绿字不再用系统填充色（2.22 → ≥4.5）
   {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, colorScheme: 'light', locale: 'zh-CN' });
-    await ctx.addInitScript(() => localStorage.setItem('findcar.ui.style', 'apple'));
     const page = await ctx.newPage();
     await page.goto(`http://127.0.0.1:${PORT_MAIN}/`, { waitUntil: 'networkidle' });
     await page.waitForSelector('tbody tr');
@@ -220,7 +194,6 @@ function check(name, ok, detail) {
   // 5.2 工具条 meta / 版本徽标（浅 ≥3.4、深 ≥4.5）
   for (const theme of ['light', 'dark']) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, colorScheme: theme, locale: 'zh-CN' });
-    await ctx.addInitScript(() => localStorage.setItem('findcar.ui.style', 'apple'));
     const page = await ctx.newPage();
     await page.goto(`http://127.0.0.1:${PORT_MAIN}/`, { waitUntil: 'networkidle' });
     await page.waitForSelector('tbody tr');
@@ -235,7 +208,6 @@ function check(name, ok, detail) {
   // 5.3 命中区 44×44：圆钮（1280 / 390）
   for (const width of [1280, 390]) {
     const ctx = await browser.newContext({ viewport: { width, height: 844 }, locale: 'zh-CN' });
-    await ctx.addInitScript(() => localStorage.setItem('findcar.ui.style', 'apple'));
     const page = await ctx.newPage();
     await page.goto(`http://127.0.0.1:${PORT_MAIN}/`, { waitUntil: 'networkidle' });
     await page.waitForSelector('tbody tr');
@@ -247,10 +219,9 @@ function check(name, ok, detail) {
     await ctx.close();
   }
 
-  // 5.4 命中区 44×44：复制键（且不与同行 IP 链接的命中区重叠）、主按钮、分段段
+  // 5.4 命中区 44×44：复制键（且不与同行 IP 链接的命中区重叠）、主按钮、主题按钮
   {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, locale: 'zh-CN' });
-    await ctx.addInitScript(() => localStorage.setItem('findcar.ui.style', 'apple'));
     const page = await ctx.newPage();
     await page.goto(`http://127.0.0.1:${PORT_MAIN}/`, { waitUntil: 'networkidle' });
     await page.waitForSelector('tbody tr');
@@ -267,15 +238,14 @@ function check(name, ok, detail) {
       `可见间距 ${gap.gap}px，命中区左缘 ${Math.round(gap.copyCenterX - 22)} vs 链接右缘 ${Math.round(gap.linkRight)}`);
     const primary = await page.evaluate(HIT_FN, { sel: '#search-btn', d: 21 });
     check('主按钮命中区 ≥44×44（高 44）', primary && primary.miss.length === 0 && primary.h >= 44, primary ? `${primary.w}×${primary.h}` : 'no node');
-    const seg = await page.evaluate(HIT_FN, { sel: '.uiSegBtn.active', d: 21 });
-    check('分段段按钮命中区 44×44（纵向扩展，不吞邻段）', seg && seg.miss.length === 0, seg ? `${seg.w}×${seg.h} miss=${seg.miss}` : 'no node');
+    const themeBtn = await page.evaluate(HIT_FN, { sel: '.themeButton', d: 21 });
+    check('主题按钮命中区 44×44（可见尺寸不变 + ::after 扩展）', themeBtn && themeBtn.miss.length === 0, themeBtn ? `${themeBtn.w}×${themeBtn.h} miss=${themeBtn.miss}` : 'no node');
     await ctx.close();
   }
 
   // 5.5 聚焦环：3px 不透明；聚焦不改主按钮填充（与 hover 分开）
   for (const theme of ['light', 'dark']) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, colorScheme: theme, locale: 'zh-CN' });
-    await ctx.addInitScript(() => localStorage.setItem('findcar.ui.style', 'apple'));
     const page = await ctx.newPage();
     await page.goto(`http://127.0.0.1:${PORT_MAIN}/`, { waitUntil: 'networkidle' });
     await page.waitForSelector('tbody tr');
@@ -327,7 +297,7 @@ function check(name, ok, detail) {
     return {
       dotAnim: g('.dot.online').animationName,
       skelAnim: (() => { const el = document.querySelector('.skelBar'); return el ? getComputedStyle(el).animationName : 'none'; })(),
-      segTrans: g('.uiSegBtn').transitionDuration,
+      btnTrans: g('.themeButton').transitionDuration,
       headerBg: g('.headerRow').backgroundColor, headerBlur: g('.headerRow').backdropFilter,
       toastBg: g('.toast').backgroundColor, toastBlur: g('.toast').backdropFilter,
       panelBorder: g('.panelCard').borderTopWidth + ' ' + g('.panelCard').borderTopColor,
@@ -345,7 +315,6 @@ function check(name, ok, detail) {
   };
   {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, colorScheme: 'dark', locale: 'zh-CN' });
-    await ctx.addInitScript(() => localStorage.setItem('findcar.ui.style', 'apple'));
     const page = await ctx.newPage();
     await page.goto(`http://127.0.0.1:${PORT_MAIN}/`, { waitUntil: 'networkidle' });
     await page.waitForSelector('tbody tr');
@@ -360,8 +329,8 @@ function check(name, ok, detail) {
     };
     const rm = await emulate('prefers-reduced-motion');
     check('prefers-reduced-motion 实跑生效（脉冲/骨架停、过渡缩到 0.01ms）',
-      rm.mq.rm && base.dotAnim !== 'none' && rm.dotAnim === 'none' && rm.skelAnim === 'none' && parseFloat(rm.segTrans) < 0.001,
-      `dot ${base.dotAnim}→${rm.dotAnim} skel ${base.skelAnim}→${rm.skelAnim} transition ${base.segTrans}→${rm.segTrans}`);
+      rm.mq.rm && base.dotAnim !== 'none' && rm.dotAnim === 'none' && rm.skelAnim === 'none' && parseFloat(rm.btnTrans) < 0.001,
+      `dot ${base.dotAnim}→${rm.dotAnim} skel ${base.skelAnim}→${rm.skelAnim} transition ${base.btnTrans}→${rm.btnTrans}`);
     const rt = await emulate('prefers-reduced-transparency');
     check('prefers-reduced-transparency 实跑生效（材质退实色、去模糊）',
       rt.mq.rt && base.headerBlur !== 'none' && rt.headerBlur === 'none' && rt.toastBlur === 'none' && rt.headerBg.startsWith('rgb('),
@@ -382,7 +351,6 @@ function check(name, ok, detail) {
   {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, locale: 'zh-CN' });
     await ctx.addInitScript(() => {
-      window.localStorage.setItem('findcar.ui.style', 'apple');
       window.__opened = [];
       window.open = function (url) { window.__opened.push(String(url)); return null; };
     });
@@ -412,7 +380,6 @@ function check(name, ok, detail) {
   // 5.8 离线行：IP 链接 aria-disabled 且不跳转，只给离线 toast
   {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, locale: 'zh-CN' });
-    await ctx.addInitScript(() => localStorage.setItem('findcar.ui.style', 'apple'));
     await ctx.route('**/devices', (route) => route.fulfill({
       status: 200, contentType: 'application/json',
       body: JSON.stringify({ devices: [
@@ -443,7 +410,6 @@ function check(name, ok, detail) {
   // 5.9 错误态：本地化词条、不回显后端原文、空面板收起
   {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, colorScheme: 'light', locale: 'zh-CN' });
-    await ctx.addInitScript(() => localStorage.setItem('findcar.ui.style', 'apple'));
     const page = await ctx.newPage();
     const warns = [];
     page.on('console', (m) => { if (m.type() === 'warning') warns.push(m.text()); });
@@ -467,7 +433,6 @@ function check(name, ok, detail) {
   // 5.10 骨架屏不跳动（工具条 meta 行同时占位、按上次设备数占位行数）
   {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'zh-CN' });
-    await ctx.addInitScript(() => localStorage.setItem('findcar.ui.style', 'apple'));
     const page = await ctx.newPage();
     await page.goto(`http://127.0.0.1:${PORT_MAIN}/`, { waitUntil: 'domcontentloaded' });
     const during = await (async () => {
@@ -499,7 +464,6 @@ function check(name, ok, detail) {
   // 5.11 刷新按钮宽度稳定（meta 不位移）+ toast 宽度/多行圆角 + meta theme-color 跟随主题
   {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 844 }, colorScheme: 'dark', locale: 'zh-CN' });
-    await ctx.addInitScript(() => localStorage.setItem('findcar.ui.style', 'apple'));
     const page = await ctx.newPage();
     await page.goto(`http://127.0.0.1:${PORT_MAIN}/`, { waitUntil: 'networkidle' });
     await page.waitForSelector('tbody tr');
@@ -536,7 +500,6 @@ function check(name, ok, detail) {
   {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US' });
     await ctx.addInitScript(() => {
-      localStorage.setItem('findcar.ui.style', 'apple');
       localStorage.setItem('findcar.ui.lang', 'en');
       function N() {}
       N.permission = 'denied';

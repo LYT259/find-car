@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""FDC 本地验证桩：静态服务 public/，/devices 返回固定两台设备（延迟 700ms 以便截骨架屏），
-/backup/index.html 指向 backups/ 里的座舱备份版用于计算样式对比。仅本地验证用，不参与部署。
+"""FDC 本地验证桩：静态服务 public/，/devices 返回固定两台设备（延迟 700ms 以便截骨架屏）。
+仅本地验证用，不参与部署。
 端口可用环境变量 FDC_PORT 覆盖（默认 8099）。"""
 import json
 import os
@@ -10,7 +10,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PUBLIC = ROOT / "public"
-BACKUP = sorted((ROOT / "backups").glob("index-cockpit-*.html"))[-1]
 PORT = int(os.environ.get("FDC_PORT", "8099"))
 NOW = int(time.time() * 1000)
 DEVICES = {
@@ -59,13 +58,6 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
-        elif self.path == "/backup/index.html":
-            body = BACKUP.read_bytes()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
         else:
             super().do_GET()
 
@@ -74,5 +66,5 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"serving {PUBLIC} on http://127.0.0.1:{PORT} (backup={BACKUP.name})")
+    print(f"serving {PUBLIC} on http://127.0.0.1:{PORT}")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

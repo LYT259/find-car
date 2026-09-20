@@ -1,7 +1,5 @@
-# 本地验证与历史快照（不入库；index-cockpit-*.html 为座舱验证基准，需入库供 CI 使用）
-# 注意：不能写 backups/（排除目录本身后其内文件的否定规则不生效），必须写 backups/*
+# 本地验证与历史快照（不入库）
 backups/*
-!backups/index-cockpit-*.html
 .verify/shots/
 
 # wrangler 本地状态

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh" data-theme="dark" data-ui="apple">
+<html lang="zh" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -27,7 +27,6 @@
   // 首屏防闪烁：与 DD（index.html 内联脚本）和 DC（WebConsoleAssets.h）同款逻辑——
   // 渲染前按系统深浅色偏好解析一次、不读任何存储，因此每次进入/刷新都重新跟随系统。
   // 手动切换只在本次页面视图内生效（内存态，不持久化）；matchMedia 不可用时回退深色。
-  // 界面风格（cockpit / apple）读 localStorage['findcar.ui.style']，缺省与读取失败都回退 apple。
   (function () {
     try {
       var m = typeof window.matchMedia === 'function'
@@ -35,97 +34,11 @@
         : null;
       document.documentElement.dataset.theme = (m && m.matches) ? 'light' : 'dark';
     } catch (e) { /* 保持默认深色 */ }
-    try {
-      var ui = window.localStorage.getItem('findcar.ui.style');
-      document.documentElement.dataset.ui = (ui === 'cockpit' || ui === 'apple') ? ui : 'apple';
-    } catch (e) {
-      document.documentElement.dataset.ui = 'apple';
-    }
   })();
 </script>
 <style>
   /* ------------------------------------------------------------------
-   * 『座舱』象限（data-ui="cockpit"）：设计语言与 DonkeyDrifter（DD）的
-   * theme-mus4 / theme-light 皮肤、Drifter Console（DC）的 WebConsoleAssets.h
-   * 逐值对齐（:root 与 html[data-theme="light"] 两个变量块为座舱基准，保持不动）：
-   *   深色：页面 #101318、面板 #171c24、内层 #111820、描边 #2b3441/#344154、
-   *         文字 #e8edf2 / #b7c6d8 / #8fa1b5 / #6b7d90
-   *   浅色：页面 #eef1f5、面板 #fff、内层 #f4f6f9、描边 #d5dce4/#ccd5df、
-   *         文字 #1a2330 / #3f4f63 / #5b6b7d
-   *   标志色：FILL 实色蓝 #5cc8ff + 近黑字 #061019（hover #8bdcff）；
-   *          FRAME 状态色 绿 #39d98a（浅色 #1fae6b）= 正常/在线、
-   *          琥珀 #ffcc66（#b57d0e）= 过渡/警告、红 #ff6b6b（#e5484d）= 危险、
-   *          灰 #475569（#94a3b8）= 关闭/离线；浅色正文蓝用固件浅色版 #0c9bd6。
-   *   形状：面板 10px 圆角 + 1px 细框 + 135deg 渐变；控件一律 9999px 胶囊；
-   *          微标签 11–12px 大写 + .08em 字距。
-   * ------------------------------------------------------------------ */
-  :root {
-    color-scheme: dark;
-    --bg: #101318;
-    --panel: #171c24;
-    --panel-2: #111820;
-    --raised: #232c3a;
-    --border: #2b3441;
-    --border-2: #344154;
-    --text: #e8edf2;
-    --text-2: #b7c6d8;
-    --text-3: #8fa1b5;
-    --text-4: #6b7d90;
-    --accent: #5cc8ff;
-    --accent-hover: #8bdcff;
-    --accent-text: #5cc8ff;
-    --on-accent: #061019;
-    --ok: #39d98a;
-    --warn: #ffcc66;
-    --bad: #ff6b6b;
-    --off: #475569;
-    --btn-bg: #111820;
-    --btn-border: #344154;
-    --btn-inner: inset 0 0 0 1px #2b3441;
-    --btn-text: #b9c5d3;
-    --btn-text-hover: #e8edf2;
-    --card-grad: linear-gradient(135deg, #1c2430, #121821);
-    --card-shadow: none;
-    --row-hover: rgba(92, 200, 255, .06);
-    --tint-bad: rgba(255, 107, 107, .08);
-    --seg-hover: rgba(92, 200, 255, .10);
-    --ink-hi: #e8edf2;
-  }
-  html[data-theme="light"] {
-    color-scheme: light;
-    --bg: #eef1f5;
-    --panel: #ffffff;
-    --panel-2: #f4f6f9;
-    --raised: #e2e8f0;
-    --border: #d5dce4;
-    --border-2: #ccd5df;
-    --text: #1a2330;
-    --text-2: #3f4f63;
-    --text-3: #5b6b7d;
-    --text-4: #7c8da0;
-    --accent: #5cc8ff;
-    --accent-hover: #3eb6f0;
-    --accent-text: #0c9bd6;
-    --on-accent: #061019;
-    --ok: #1fae6b;
-    --warn: #b57d0e;
-    --bad: #e5484d;
-    --off: #94a3b8;
-    --btn-bg: #f4f6f9;
-    --btn-border: #ccd5df;
-    --btn-inner: inset 0 0 0 1px #d5dce4;
-    --btn-text: #3f4f63;
-    --btn-text-hover: #1a2330;
-    --card-grad: linear-gradient(135deg, #ffffff, #edf1f6);
-    --card-shadow: 0 1px 3px rgba(15, 23, 42, .08);
-    --row-hover: rgba(12, 155, 214, .06);
-    --tint-bad: rgba(229, 72, 77, .08);
-    --seg-hover: rgba(12, 155, 214, .12);
-    --ink-hi: #1a2330;
-  }
-
-  /* ------------------------------------------------------------------
-   * 『Apple』象限（data-ui="apple"，默认）：仅覆写变量，座舱两块保持原值。
+   * Apple 设计语言（2026-09-20 起为唯一界面风格，座舱象限已随 v1.6.0 移除）：
    *   深色：canvas #000、surface #1c1c1e / #2c2c2e、ink #f5f5f7、
    *         ink2 rgba(235,235,245,.62)、hairline rgba(255,255,255,.10)、
    *         accent #2997ff / accent-fill #0a84ff、状态色 #30d158/#ff9f0a/#ff453a/#636366
@@ -134,7 +47,7 @@
    *         状态色 #34c759/#ff9500/#ff3b30/#8e8e93
    *   形状：控件 8–10px、卡片 16–18px、胶囊 9999px；字重只用 400/600。
    * ------------------------------------------------------------------ */
-  html[data-ui="apple"] {
+  :root {
     color-scheme: dark;
     --bg: #000000;
     --panel: #1c1c1e;
@@ -167,9 +80,6 @@
     --card-shadow: none;
     --row-hover: rgba(255, 255, 255, .06);
     --tint-bad: rgba(255, 69, 58, .12);
-    --seg-track: rgba(120, 120, 128, .24);
-    --seg-thumb: #636366;
-    --seg-thumb-shadow: 0 1px 3px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .35);
     --skel: rgba(235, 235, 245, .14);
     --version-ink: rgba(235, 235, 245, .52);
     --header-bg: rgba(28, 28, 30, .72);
@@ -180,7 +90,7 @@
     --focus-ring: #2997ff;
     --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5l7 7-7 7'/%3E%3C/svg%3E");
   }
-  html[data-ui="apple"][data-theme="light"] {
+  html[data-theme="light"] {
     color-scheme: light;
     --bg: #f5f5f7;
     --panel: #ffffff;
@@ -214,9 +124,6 @@
     --row-hover: rgba(0, 0, 0, .05);
     /* 横幅底色弱一档：让 --bad-text 在 tint 上也过 4.5:1（.08 时实测 4.46） */
     --tint-bad: rgba(255, 59, 48, .06);
-    --seg-track: rgba(120, 120, 128, .16);
-    --seg-thumb: #ffffff;
-    --seg-thumb-shadow: 0 1px 3px rgba(0, 0, 0, .12), 0 1px 2px rgba(0, 0, 0, .06);
     --skel: rgba(60, 60, 67, .10);
     --version-ink: rgba(60, 60, 67, .62);
     --header-bg: rgba(245, 245, 247, .72);
@@ -321,39 +228,6 @@
   .bellButton.off .icoBell { display: none; }
   .bellButton.off .icoBellOff { display: block; }
 
-  /* 界面风格分段切换器（座舱 / Apple）：统一几何 v1——28px 轨道 / 24px 段按钮 / 12px 600 字；
-     座舱象限 = 面板色轨道 + 次级描边 + accent 填充激活段，Apple 象限覆写为 iOS 分段控件 */
-  .uiSeg {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    height: 28px;
-    padding: 2px;
-    border-radius: 999px;
-    border: 1px solid var(--border-2);
-    background: var(--panel);
-    box-sizing: border-box;
-  }
-  .uiSegBtn {
-    height: 24px;
-    padding: 0 12px;
-    border: none;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--text-3);
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: color .15s, background-color .15s;
-  }
-  .uiSegBtn:hover { background: var(--seg-hover); color: var(--ink-hi); }
-  .uiSegBtn.active { background: var(--accent); color: var(--on-accent); }
-  .uiSegBtn.active:hover { background: var(--accent-hover); color: var(--on-accent); }
-  .uiSegBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-
   /* ---------- 工具条 ---------- */
   .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
   .btnPrimary {
@@ -399,7 +273,7 @@
     border-radius: 10px;
     background: var(--card-grad);
     box-shadow: var(--card-shadow);
-    /* 首屏等待/出错无数据时（座舱象限无骨架屏，刻意的）面板不塌成细线 */
+    /* 首屏等待/出错无数据时面板不塌成细线 */
     min-height: 96px;
     overflow: hidden;
   }
@@ -445,7 +319,7 @@
   .status-offline { color: var(--text-4); font-weight: 600; }
   .last-seen { color: var(--text-4); font-size: 12px; }
   .empty { padding: 32px 14px; text-align: center; color: var(--text-3); font-size: 13px; }
-  /* 空态图标：仅 Apple 象限显示（基座隐藏，座舱保持纯文案空态） */
+  /* 空态图标：Apple 空态的居中信号图标（基座隐藏，Apple 空态规则里重新显示） */
   .emptyIco { display: none; }
 
   /* 复制按钮：DC .iconButton 的 26px 小方钮 */
@@ -468,7 +342,7 @@
     transition: color .15s, border-color .15s;
   }
   .copyBtn:hover, .copyBtn:focus-visible { color: var(--accent-text); border-color: var(--accent-text); }
-  /* 复制成功勾 / 加载转环：基座与座舱恒隐藏，仅 Apple 象限按需显示 */
+  /* 复制成功勾 / 加载转环：基座恒隐藏，按需显示（.copied / .loading 规则） */
   .copyBtn .icoCheck { display: none; }
   .btnSpin { display: none; }
 
@@ -525,62 +399,50 @@
   }
 
   /* ==================================================================
-   * Apple 象限细修：以下规则全部以 html[data-ui="apple"] 限定，
-   * 对座舱象限（data-ui="cockpit"）零影响。
+   * Apple 细修（原 Apple 象限覆写层，座舱象限移除后已拍平为唯一规则）
    * ================================================================== */
-  html[data-ui="apple"] .headerRow h1 { font-weight: 600; letter-spacing: -.02em; }
-  html[data-ui="apple"] .version { font-weight: 400; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
-
-  /* 分段切换器：iOS 分段控件——灰底胶囊轨道（无边框观感）+ 浮起选中滑块（带投影）；
-     hover 只把段文字提为一级标签色、不变底（基座的 hover 底色在此压回透明） */
-  html[data-ui="apple"] .uiSeg { background: var(--seg-track); border-color: transparent; }
-  html[data-ui="apple"] .uiSegBtn {
-    color: var(--text-3);
-    transition: color .15s, background-color .15s, transform .1s cubic-bezier(.32, .72, 0, 1);
-  }
-  html[data-ui="apple"] .uiSegBtn:hover { background: transparent; color: var(--text); }
-  html[data-ui="apple"] .uiSegBtn.active { background: var(--seg-thumb); color: var(--text); box-shadow: var(--seg-thumb-shadow); }
+  html .headerRow h1 { font-weight: 600; letter-spacing: -.02em; }
+  html .version { font-weight: 400; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 
   /* 按钮按下回弹：scale(.97) 100ms */
-  html[data-ui="apple"] .btnPrimary,
-  html[data-ui="apple"] .copyBtn,
-  html[data-ui="apple"] .themeButton,
-  html[data-ui="apple"] .langButton,
-  html[data-ui="apple"] .bellButton {
+  html .btnPrimary,
+  html .copyBtn,
+  html .themeButton,
+  html .langButton,
+  html .bellButton {
     transition: color .2s cubic-bezier(.32, .72, 0, 1), background-color .2s cubic-bezier(.32, .72, 0, 1),
       border-color .2s cubic-bezier(.32, .72, 0, 1), transform .1s cubic-bezier(.32, .72, 0, 1);
   }
-  html[data-ui="apple"] .btnPrimary:active:not(:disabled),
-  html[data-ui="apple"] .copyBtn:active,
-  html[data-ui="apple"] .themeButton:active,
-  html[data-ui="apple"] .langButton:active,
-  html[data-ui="apple"] .bellButton:active,
-  html[data-ui="apple"] .uiSegBtn:active { transform: scale(.97); }
+  html .btnPrimary:active:not(:disabled),
+  html .copyBtn:active,
+  html .themeButton:active,
+  html .langButton:active,
+  html .bellButton:active { transform: scale(.97); }
 
-  html[data-ui="apple"] .btnPrimary { border-radius: 9999px; border-color: transparent; font-weight: 600; padding: 8px 18px; }
-  html[data-ui="apple"] .btnPrimary:hover:not(:disabled) { border-color: transparent; }
+  html .btnPrimary { border-radius: 9999px; border-color: transparent; font-weight: 600; padding: 8px 18px; }
+  html .btnPrimary:hover:not(:disabled) { border-color: transparent; }
   /* 聚焦不参与 hover 的填充变化：只留焦点环（原先聚焦会把主按钮提亮一档） */
-  html[data-ui="apple"] .btnPrimary:focus-visible:not(:disabled) {
+  html .btnPrimary:focus-visible:not(:disabled) {
     background: var(--accent);
     border-color: transparent;
   }
-  html[data-ui="apple"] .toolbarMeta { text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
-  html[data-ui="apple"] .banner { border-radius: 12px; }
+  html .toolbarMeta { text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+  html .banner { border-radius: 12px; }
 
-  /* 移动端卡片字段名：与 Apple 表头同款（13px 非大写），不继承座舱微标签 */
+  /* 移动端卡片字段名：与 Apple 表头同款（13px 非大写） */
   @media (max-width: 560px) {
-    html[data-ui="apple"] td::before { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+    html td::before { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
   }
 
   /* 分组卡去渐变去投影：iOS inset-grouped 同款——无描边，靠底色对比浮于画布，17px 圆角 */
-  html[data-ui="apple"] .panelCard {
+  html .panelCard {
     background: var(--panel);
     border: 0;
     border-radius: 17px;
     box-shadow: none;
   }
   /* 列表栏头：去分隔线、上下留白收成 iOS 分组标题观感 */
-  html[data-ui="apple"] th {
+  html th {
     font-size: 13px;
     font-weight: 600;
     text-transform: none;
@@ -588,20 +450,20 @@
     border-bottom: none;
     padding: 12px 14px 6px;
   }
-  html[data-ui="apple"] td {
+  html td {
     border-bottom: none;
     font-variant-numeric: tabular-nums;
     transition: color .32s ease, background-color .12s ease;
   }
-  html[data-ui="apple"] td.name { font-weight: 600; }
-  html[data-ui="apple"] .status-online { font-weight: 600; }
-  html[data-ui="apple"] .copyBtn { border-radius: 8px; border-color: transparent; }
-  html[data-ui="apple"] .copyBtn:hover, html[data-ui="apple"] .copyBtn:focus-visible {
+  html td.name { font-weight: 600; }
+  html .status-online { font-weight: 600; }
+  html .copyBtn { border-radius: 8px; border-color: transparent; }
+  html .copyBtn:hover, html .copyBtn:focus-visible {
     border-color: transparent;
     background: var(--row-hover);
   }
   /* toast：iOS 同款——底部居中胶囊，半透明 + 背景模糊，spring 时序进场，随主题交叉淡化 */
-  html[data-ui="apple"] .toast {
+  html .toast {
     inset-inline: 18px;
     bottom: calc(28px + env(safe-area-inset-bottom));
     width: fit-content;
@@ -618,47 +480,45 @@
     transition: opacity .28s cubic-bezier(.32, .72, 0, 1), transform .28s cubic-bezier(.32, .72, 0, 1),
       background-color .32s ease, border-color .32s ease;
   }
-  html[data-ui="apple"] .toast.show { transform: translateY(0); }
+  html .toast.show { transform: translateY(0); }
   /* 胶囊是单行形状：多行提示改 16px 圆角（否则被钳成半高半径） */
-  html[data-ui="apple"] .toast.multiline { border-radius: 16px; }
-  html[data-ui="apple"][data-theme="light"] .toast { box-shadow: 0 8px 32px rgba(15, 23, 42, .18); }
+  html .toast.multiline { border-radius: 16px; }
+  html[data-theme="light"] .toast { box-shadow: 0 8px 32px rgba(15, 23, 42, .18); }
 
   /* 行增删 / 状态变化：200ms cubic-bezier(.32,.72,0,1)。render() 只在行集合
      或在线状态变化时给 tbody 加 rows-anim，常态 5s 轮询不重复播放。 */
-  html[data-ui="apple"] tbody.rows-anim tr { animation: appleRowIn .2s cubic-bezier(.32, .72, 0, 1) both; }
+  html tbody.rows-anim tr { animation: appleRowIn .2s cubic-bezier(.32, .72, 0, 1) both; }
   @keyframes appleRowIn { from { opacity: 0; } to { opacity: 1; } }
 
-  /* 首屏骨架屏：呼吸占位条，1.2s 一个周期，仅 Apple 象限注入/显示。
+  /* 首屏骨架屏：呼吸占位条，1.2s 一个周期，等待首个 /devices 响应期间注入/显示。
      占位块几何 = 真实列表几何（栏头行 37.5px = th 行高，设备行 50px / 移动卡片 166px），
      骨架换成内容时不产生高度跳变；行数由 render() 按上次设备数决定（JS showSkeleton）。 */
-  html[data-ui="apple"] .skel { display: flex; flex-direction: column; padding: 0; gap: 0; }
-  html[data-ui="apple"] .skelHead, html[data-ui="apple"] .skelRow {
+  html .skel { display: flex; flex-direction: column; padding: 0; gap: 0; }
+  html .skelHead, html .skelRow {
     display: flex; align-items: center; gap: 14px; padding: 0 14px;
   }
-  html[data-ui="apple"] .skelHead { height: 37.5px; }
-  html[data-ui="apple"] .skelRow { height: 50px; }
-  html[data-ui="apple"] .skelBar {
+  html .skelHead { height: 37.5px; }
+  html .skelRow { height: 50px; }
+  html .skelBar {
     display: block;
     height: 12px;
     border-radius: 6px;
     background: var(--skel);
     animation: skelBreath 1.2s ease-in-out infinite;
   }
-  html[data-ui="apple"] .skel > *:nth-child(2) .skelBar { animation-delay: .15s; }
-  html[data-ui="apple"] .skel > *:nth-child(3) .skelBar { animation-delay: .3s; }
-  html[data-ui="apple"] .skel > *:nth-child(4) .skelBar { animation-delay: .45s; }
+  html .skel > *:nth-child(2) .skelBar { animation-delay: .15s; }
+  html .skel > *:nth-child(3) .skelBar { animation-delay: .3s; }
+  html .skel > *:nth-child(4) .skelBar { animation-delay: .45s; }
   @keyframes skelBreath { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
-  html:not([data-ui="apple"]) .skel { display: none; }
 
   /* ==================================================================
-   * Apple 象限全面细修（2026-09-16 第二轮）：页头材质 / 整行跳转 /
+   * Apple 全面细修（2026-09-16 第二轮）：页头材质 / 整行跳转 /
    * 状态点脉冲 / 空态图标 / 主题交叉淡化 / 减弱动效与透明度兜底。
-   * 全部以 html[data-ui="apple"] 限定，对座舱象限零影响。
    * ================================================================== */
   /* 吸顶页头：iOS 导航栏材质——半透明 + 背景模糊 + 底部 hairline，
      左右负边距抵消 .page 内边距，把模糊条与分隔线拉通到页面边缘。
      hairline 默认透明，页面滚离顶部（JS 加 .scrolled）才浮现——apple.com 同款 */
-  html[data-ui="apple"] .headerRow {
+  html .headerRow {
     margin: 0 -16px;
     padding: 0 16px;
     background: var(--header-bg);
@@ -666,35 +526,35 @@
     backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid transparent;
   }
-  html[data-ui="apple"] .headerRow.scrolled { border-bottom-color: var(--border); }
+  html .headerRow.scrolled { border-bottom-color: var(--border); }
   /* 页头过渡单列：hairline 淡入 .2s，背景/文字仍走 320ms 主题交叉淡化
      （.headerRow 不再进下面的合并过渡规则，以免 border-color 被 .32s 覆盖） */
-  html[data-ui="apple"] .headerRow {
+  html .headerRow {
     transition: background-color .32s ease, border-color .2s ease, color .32s ease;
   }
-  html[data-ui="apple"] .toolbar { margin-top: 16px; }
+  html .toolbar { margin-top: 16px; }
   /* 主题切换 320ms 交叉淡化（控件自身已有更快的交互过渡，不重复列；页头见上方单列规则） */
-  html[data-ui="apple"] body, html[data-ui="apple"] .panelCard,
-  html[data-ui="apple"] .banner, html[data-ui="apple"] .empty {
+  html body, html .panelCard,
+  html .banner, html .empty {
     transition: background-color .32s ease, border-color .32s ease, color .32s ease;
   }
-  html[data-ui="apple"] ::selection { background: var(--selection); }
+  html ::selection { background: var(--selection); }
 
   /* 页头外链（logo / 标题 / GitHub 图标）：hover 微淡、按压回弹 */
-  html[data-ui="apple"] .logoLink, html[data-ui="apple"] .titleLink, html[data-ui="apple"] .ghLink {
+  html .logoLink, html .titleLink, html .ghLink {
     transition: opacity .15s ease, color .15s ease, transform .1s cubic-bezier(.32, .72, 0, 1);
   }
-  html[data-ui="apple"] .logoLink:hover, html[data-ui="apple"] .titleLink:hover { opacity: .72; }
-  html[data-ui="apple"] .logoLink:active, html[data-ui="apple"] .titleLink:active,
-  html[data-ui="apple"] .ghLink:active { transform: scale(.95); }
+  html .logoLink:hover, html .titleLink:hover { opacity: .72; }
+  html .logoLink:active, html .titleLink:active,
+  html .ghLink:active { transform: scale(.95); }
 
-  /* 整行点击跳对应控制台（JS 仅 Apple 象限启用，座舱行交互不变）：
+  /* 整行点击跳对应控制台：
      指针手势 + 行按压反馈 + 右缘 chevron 暗示可跳转（iOS 列表惯用法） */
-  html[data-ui="apple"] tbody tr { position: relative; cursor: pointer; }
-  html[data-ui="apple"] tbody tr:active td { background: var(--row-pressed); }
-  html[data-ui="apple"] tbody tr td:last-child { padding-right: 30px; }
+  html tbody tr { position: relative; cursor: pointer; }
+  html tbody tr:active td { background: var(--row-pressed); }
+  html tbody tr td:last-child { padding-right: 30px; }
   /* chevron：SVG 掩膜图标（原 U+203A 文本字符字重/对比不可控，浅色仅 2.40:1） */
-  html[data-ui="apple"] tbody tr td:last-child::after {
+  html tbody tr td:last-child::after {
     content: "";
     position: absolute;
     right: 14px;
@@ -714,26 +574,26 @@
     pointer-events: none;
     transition: background-color .15s ease;
   }
-  html[data-ui="apple"] tbody tr:hover td:last-child::after { background-color: var(--text-2); }
+  html tbody tr:hover td:last-child::after { background-color: var(--text-2); }
   /* 离线行不跳死链：恢复默认指针、收起 chevron、按压不染色（行内 IP 链接仍可显式点按） */
-  html[data-ui="apple"] tbody tr.offline { cursor: default; }
-  html[data-ui="apple"] tbody tr.offline td:last-child::after { content: none; }
-  html[data-ui="apple"] tbody tr.offline:active td { background: none; }
+  html tbody tr.offline { cursor: default; }
+  html tbody tr.offline td:last-child::after { content: none; }
+  html tbody tr.offline:active td { background: none; }
   /* 行内链接：hover 改亮度、不画下划线（apple.com 同款） */
-  html[data-ui="apple"] td a { transition: color .15s ease, opacity .1s ease; }
-  html[data-ui="apple"] td a:hover { color: var(--accent-hover); text-decoration: none; }
-  html[data-ui="apple"] td a:active { opacity: .6; }
+  html td a { transition: color .15s ease, opacity .1s ease; }
+  html td a:hover { color: var(--accent-hover); text-decoration: none; }
+  html td a:active { opacity: .6; }
 
   /* 在线状态点：2.4s 呼吸脉冲光环（prefers-reduced-motion 下关闭） */
-  html[data-ui="apple"] .dot.online { animation: appleDotPulse 2.4s cubic-bezier(.4, 0, .2, 1) infinite; }
+  html .dot.online { animation: appleDotPulse 2.4s cubic-bezier(.4, 0, .2, 1) infinite; }
   @keyframes appleDotPulse {
     0% { box-shadow: 0 0 0 0 var(--ok-pulse); }
     70% { box-shadow: 0 0 0 7px transparent; }
     100% { box-shadow: 0 0 0 0 transparent; }
   }
 
-  /* 空态：居中信号图标 + 文案（图标基座隐藏，座舱保持纯文案） */
-  html[data-ui="apple"] .empty {
+  /* 空态：居中信号图标 + 文案 */
+  html .empty {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -741,26 +601,26 @@
     padding: 48px 14px;
     font-size: 14px;
   }
-  html[data-ui="apple"] .emptyIco { display: block; width: 40px; height: 40px; color: var(--text-4); }
+  html .emptyIco { display: block; width: 40px; height: 40px; color: var(--text-4); }
 
   /* 行分隔线：iOS inset-grouped 同款——左缩 14px 对齐文字、右缘贯通。
      用 tr 背景渐变画线（td 透明无下框），桌面表格与移动卡片同一条规则 */
-  html[data-ui="apple"] tbody tr + tr {
+  html tbody tr + tr {
     background-image: linear-gradient(var(--border), var(--border));
     background-size: calc(100% - 14px) 1px;
     background-position: left 14px top 0;
     background-repeat: no-repeat;
   }
   /* Apple 式聚焦环：3px 不透明 accent（半透明环实测 1.86–2.31:1，非文本需 ≥3:1） */
-  html[data-ui="apple"] :focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+  html :focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
   /* 面板 overflow:hidden，行内聚焦环内缩，避免被卡片边缘裁掉 */
-  html[data-ui="apple"] tbody tr:focus-visible { outline-offset: -3px; }
-  html[data-ui="apple"] table { font-size: 15px; }
-  html[data-ui="apple"] { -webkit-text-size-adjust: 100%; }
-  html[data-ui="apple"] body { -webkit-tap-highlight-color: transparent; }
+  html tbody tr:focus-visible { outline-offset: -3px; }
+  html table { font-size: 15px; }
+  html { -webkit-text-size-adjust: 100%; }
+  html body { -webkit-tap-highlight-color: transparent; }
 
   /* 加载转环：手动刷新中的 iOS 活动指示器（reduced-motion 下保留——它是状态反馈而非装饰） */
-  html[data-ui="apple"] .btnPrimary.loading .btnSpin {
+  html .btnPrimary.loading .btnSpin {
     display: inline-block;
     width: 12px;
     height: 12px;
@@ -772,71 +632,70 @@
   @keyframes appleSpin { to { transform: rotate(360deg); } }
 
   /* 复制成功：按钮图标短暂变绿勾（1.2s），与 toast 同时出现 */
-  html[data-ui="apple"] .copyBtn.copied { color: var(--ok-text); }
-  html[data-ui="apple"] .copyBtn.copied .icoCopy { display: none; }
-  html[data-ui="apple"] .copyBtn.copied .icoCheck { display: block; }
+  html .copyBtn.copied { color: var(--ok-text); }
+  html .copyBtn.copied .icoCopy { display: none; }
+  html .copyBtn.copied .icoCheck { display: block; }
 
   @media (max-width: 560px) {
-    html[data-ui="apple"] .headerRow { margin: 0 -12px; padding: 10px 12px; }
-    html[data-ui="apple"] .headerRow { padding-top: calc(10px + env(safe-area-inset-top)); height: auto; }
+    html .headerRow { margin: 0 -12px; padding: 10px 12px; }
+    html .headerRow { padding-top: calc(10px + env(safe-area-inset-top)); height: auto; }
     /* 移动端一台设备一张卡：骨架行同卡片等高（166px），栏头行随 thead 一起隐藏 */
-    html[data-ui="apple"] .skelHead { display: none; }
-    html[data-ui="apple"] .skelRow {
+    html .skelHead { display: none; }
+    html .skelRow {
       height: 166px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 14px;
       padding: 10px 14px;
     }
     /* 值列统一右缩 26px，为垂直居中的 chevron 让出尾槽（卡片分隔线由上面的渐变线统一处理） */
-    html[data-ui="apple"] tbody tr td { padding-right: 26px; }
-    html[data-ui="apple"] tbody tr td:last-child::after { right: 12px; }
+    html tbody tr td { padding-right: 26px; }
+    html tbody tr td:last-child::after { right: 12px; }
   }
 
   /* 减弱动效：关闭脉冲/骨架呼吸/行动画，过渡缩到近乎即时（加载转环保留） */
   @media (prefers-reduced-motion: reduce) {
-    html[data-ui="apple"] .dot.online,
-    html[data-ui="apple"] .skelBar,
-    html[data-ui="apple"] tbody.rows-anim tr { animation: none; }
-    html[data-ui="apple"] *, html[data-ui="apple"] *::before, html[data-ui="apple"] *::after {
+    html .dot.online,
+    html .skelBar,
+    html tbody.rows-anim tr { animation: none; }
+    html *, html *::before, html *::after {
       transition-duration: .01ms !important;
     }
   }
   /* 减弱透明度：页头与 toast 退回实色，不启用背景模糊 */
   @media (prefers-reduced-transparency: reduce) {
-    html[data-ui="apple"] .headerRow,
-    html[data-ui="apple"] .toast {
+    html .headerRow,
+    html .toast {
       background: var(--bg);
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
     }
-    html[data-ui="apple"] .toast { background: var(--panel-2); }
+    html .toast { background: var(--panel-2); }
   }
 
   /* ==================================================================
-   * Apple 象限第五轮（2026-09-18）：语义色文字变体 / 灰阶达标 / 不透明聚焦环 /
+   * Apple 第五轮（2026-09-18）：语义色文字变体 / 灰阶达标 / 不透明聚焦环 /
    * 触控目标 44×44 / chevron 图标化 / safe-area / prefers-contrast / forced-colors。
-   * 全部以 html[data-ui="apple"] 限定，对座舱象限（cockpit）零影响。
    * ================================================================== */
 
   /* 语义色双轨：填充（圆点、描边、图标底）继续用 --ok/--warn/--bad，
      文字（状态字、横幅、绿勾）改用 *-text 变体——系统色当文字只有 2.2–3.3:1 */
-  html[data-ui="apple"] .status-online { color: var(--ok-text); }
-  html[data-ui="apple"] .status-offline { color: var(--text-3); }
-  html[data-ui="apple"] tr.offline td { color: var(--text-3); }
-  html[data-ui="apple"] tr.offline td.mono a { color: var(--text-3); }
-  html[data-ui="apple"] .toolbarMeta, html[data-ui="apple"] #updated { color: var(--text-4); }
-  html[data-ui="apple"] .banner { color: var(--bad-text); border-color: var(--bad); }
+  html .status-online { color: var(--ok-text); }
+  html .status-offline { color: var(--text-3); }
+  html tr.offline td { color: var(--text-3); }
+  html tr.offline td.mono a { color: var(--text-3); }
+  html .toolbarMeta, html #updated { color: var(--text-4); }
+  html .banner { color: var(--bad-text); border-color: var(--bad); }
   /* 铃铛不可用/被拒（禁用态）：斜杠铃图标之外还要读得清——.45 → .75（≈3.2:1） */
-  html[data-ui="apple"] .bellButton.off { opacity: .75; }
+  html .bellButton.off { opacity: .75; }
 
   /* 15px 表格字：字距 -.01em（≥20px 用 -.02em，≤13px 用 0） */
-  html[data-ui="apple"] td { letter-spacing: -.01em; }
+  html td { letter-spacing: -.01em; }
 
   /* 触控目标 ≥44×44：可见尺寸不变，::after 铺一层不可见命中区 */
-  html[data-ui="apple"] .themeButton, html[data-ui="apple"] .langButton,
-  html[data-ui="apple"] .bellButton, html[data-ui="apple"] .copyBtn,
-  html[data-ui="apple"] .ghLink, html[data-ui="apple"] .uiSegBtn { position: relative; }
-  html[data-ui="apple"] .themeButton::after, html[data-ui="apple"] .langButton::after,
-  html[data-ui="apple"] .bellButton::after, html[data-ui="apple"] .copyBtn::after,
-  html[data-ui="apple"] .ghLink::after {
+  html .themeButton, html .langButton,
+  html .bellButton, html .copyBtn,
+  html .ghLink { position: relative; }
+  html .themeButton::after, html .langButton::after,
+  html .bellButton::after, html .copyBtn::after,
+  html .ghLink::after {
     content: "";
     position: absolute;
     left: 50%;
@@ -845,41 +704,28 @@
     height: max(100%, 44px);
     transform: translate(-50%, -50%);
   }
-  /* 分段控件：段与段相邻，只在纵向扩到 44（段宽 48–58 已 ≥44），不吞邻段点击 */
-  html[data-ui="apple"] .uiSegBtn::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: 44px;
-    transform: translateY(-50%);
-  }
   /* 复制键与同行 IP 链接原仅隔 6px：可见间距提到 10px，44×44 命中区不再压到链接 */
-  html[data-ui="apple"] .copyBtn { margin-left: 10px; }
+  html .copyBtn { margin-left: 10px; }
   /* 页头控件间距 12 → 14px：32px 圆钮的 44×44 命中区刚好相接不互相吞并 */
-  html[data-ui="apple"] .headerActions { gap: 14px; }
-  /* 分段控件未选段是控件标签（不是元信息）：提到次级文字，轨道底上也有 4.5:1 */
-  html[data-ui="apple"] .uiSegBtn { color: var(--text-2); }
+  html .headerActions { gap: 14px; }
   /* iOS 控件尺寸：主按钮高 44、宽度按该语言最宽标签固定（刷新/查找中…、Refresh/Searching…），
-     切状态时宽度不变、右侧 meta 不位移；分段轨道 32 / 段 28 */
-  html[data-ui="apple"] .btnPrimary { height: 44px; min-width: 118px; padding: 0 20px; justify-content: center; }
-  html[data-ui="apple"]:lang(en) .btnPrimary { min-width: 148px; }
-  html[data-ui="apple"] .uiSeg { height: 32px; }
-  html[data-ui="apple"] .uiSegBtn { height: 28px; }
+     切状态时宽度不变、右侧 meta 不位移 */
+  html .btnPrimary { height: 44px; min-width: 118px; padding: 0 20px; justify-content: center; }
+  html:lang(en) .btnPrimary { min-width: 148px; }
 
   /* safe-area：standalone 全屏（black-translucent）下页头与 toast 让开状态栏 / 手势区 */
-  html[data-ui="apple"] .headerRow {
+  html .headerRow {
     height: calc(56px + env(safe-area-inset-top));
     padding-top: env(safe-area-inset-top);
   }
   @media (max-width: 560px) {
-    html[data-ui="apple"] .headerRow { height: auto; padding-top: calc(10px + env(safe-area-inset-top)); }
+    html .headerRow { height: auto; padding-top: calc(10px + env(safe-area-inset-top)); }
   }
 
   /* 提高对比度：文字提级到 label / secondary、发丝线加深、卡片加 1px 实描边、材质退实色 */
   @media (prefers-contrast: more) {
-    html[data-ui="apple"] {
+    /* :root 与基值定义（行 50）同特异度、靠源顺序胜出；裸 html 会被 :root 压过 */
+    :root {
       --text-2: rgba(235, 235, 245, .95);
       --text-3: #f5f5f7;
       --text-4: rgba(235, 235, 245, .85);
@@ -887,7 +733,7 @@
       --border: rgba(255, 255, 255, .30);
       --border-2: rgba(255, 255, 255, .30);
     }
-    html[data-ui="apple"][data-theme="light"] {
+    html[data-theme="light"] {
       --text-2: rgba(60, 60, 67, .95);
       --text-3: #1d1d1f;
       --text-4: rgba(60, 60, 67, .85);
@@ -895,23 +741,23 @@
       --border: rgba(0, 0, 0, .30);
       --border-2: rgba(0, 0, 0, .30);
     }
-    html[data-ui="apple"] .panelCard { border: 1px solid var(--border); }
-    html[data-ui="apple"] .headerRow,
-    html[data-ui="apple"] .toast {
+    html .panelCard { border: 1px solid var(--border); }
+    html .headerRow,
+    html .toast {
       background: var(--bg);
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
     }
-    html[data-ui="apple"] .toast { background: var(--panel-2); }
+    html .toast { background: var(--panel-2); }
   }
 
   /* 强制颜色（Windows 高对比等）：分隔线与状态点是用背景色/背景图画出来的，
      这里用 CanvasText 把它们画回来，否则结构全丢 */
   @media (forced-colors: active) {
-    html[data-ui="apple"] .panelCard { border: 1px solid CanvasText; }
-    html[data-ui="apple"] .headerRow { border-bottom: 1px solid CanvasText; }
-    html[data-ui="apple"] tbody tr + tr { background-image: none; border-top: 1px solid CanvasText; }
-    html[data-ui="apple"] .dot { border: 1px solid CanvasText; }
+    html .panelCard { border: 1px solid CanvasText; }
+    html .headerRow { border-bottom: 1px solid CanvasText; }
+    html tbody tr + tr { background-image: none; border-top: 1px solid CanvasText; }
+    html .dot { border: 1px solid CanvasText; }
   }
 </style>
 </head>
@@ -923,11 +769,7 @@
       </a>
       <h1><a class="titleLink" href="https://www.donkeydrift.com" target="_blank" rel="noopener">Find Donkey Car</a></h1>
       <div class="headerActions">
-        <div class="uiSeg" id="ui-seg" role="group" data-i18n-aria="aria.uistyle">
-          <button class="uiSegBtn" type="button" data-ui-value="cockpit" data-i18n="ui.cockpit"></button>
-          <button class="uiSegBtn" type="button" data-ui-value="apple">Apple</button>
-        </div>
-        <span class="version" id="page-version">v1.5.0</span>
+        <span class="version" id="page-version">v1.6.0</span>
         <a class="ghLink" href="https://github.com/DonkeyDrift/DonkeyDrift" target="_blank" rel="noopener noreferrer"
            data-i18n-aria="aria.github" data-i18n-title="aria.github">
           <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
@@ -986,12 +828,10 @@
   var updatedEl = $('updated');
   var themeBtn = $('theme-btn');
   var langBtn = $('lang-btn');
-  var uiSegEl = $('ui-seg');
   var toastEl = $('toast');
 
   var POLL_MS = 5000;          // 自动刷新间隔（1s 轮询会打满 Cloudflare 免费额度，故放宽到 5s）
   var LANG_STORAGE_KEY = 'findcar.ui.lang';   // 与 DD 'donkeydrifter.ui.lang'、DC 'mus4.ui.lang' 同命名惯例
-  var UI_STORAGE_KEY = 'findcar.ui.style';    // 界面风格：cockpit | apple，默认 apple
 
   // 各类型的正常上报周期，与 functions/devices.js 的在线窗口同口径：
   // DD 后端 150 秒一跳、ESP32 300 秒一跳。心跳还在周期内 = 数据就是当前的，
@@ -1010,7 +850,6 @@
       'page.empty': '没有在线设备',
       'page.error': '网络错误',
       'page.errorService': '服务暂时不可用，请稍后重试',
-      'ui.cockpit': '座舱',
       'table.name': '名称',
       'table.type': '设备类型',
       'table.ip': '局域网 IP',
@@ -1045,7 +884,6 @@
       'aria.logo': 'DonkeyDrift 官网',
       'aria.github': 'DonkeyDrift GitHub 仓库',
       'aria.refresh': '手动刷新设备列表',
-      'aria.uistyle': '界面风格：座舱或 Apple',
       'aria.theme.toLight': '切换到浅色主题',
       'aria.theme.toDark': '切换到深色主题',
       'aria.lang.toEn': 'Switch to English',
@@ -1058,7 +896,6 @@
       'page.empty': 'No devices online',
       'page.error': 'Network error',
       'page.errorService': 'Service unavailable, please try again',
-      'ui.cockpit': 'Cockpit',
       'table.name': 'Name',
       'table.type': 'Device type',
       'table.ip': 'LAN IP',
@@ -1093,7 +930,6 @@
       'aria.logo': 'DonkeyDrift website',
       'aria.github': 'DonkeyDrift on GitHub',
       'aria.refresh': 'Refresh device list',
-      'aria.uistyle': 'Interface style: Cockpit or Apple',
       'aria.theme.toLight': 'Switch to light theme',
       'aria.theme.toDark': 'Switch to dark theme',
       'aria.lang.toEn': 'Switch to English',
@@ -1157,36 +993,6 @@
     syncThemeColor(theme);
     themeBtn.setAttribute('aria-label', t(theme === 'dark' ? 'aria.theme.toLight' : 'aria.theme.toDark'));
     themeBtn.setAttribute('title', themeBtn.getAttribute('aria-label'));
-  }
-
-  // ---------------- 界面风格（cockpit / apple，默认 apple，选择持久化） ----------------
-  function currentUi() {
-    return document.documentElement.dataset.ui === 'cockpit' ? 'cockpit' : 'apple';
-  }
-
-  function syncSegButtons() {
-    var ui = currentUi();
-    var btns = uiSegEl.querySelectorAll('.uiSegBtn');
-    for (var i = 0; i < btns.length; i += 1) {
-      var on = btns[i].getAttribute('data-ui-value') === ui;
-      if (on) {
-        btns[i].classList.add('active');
-      } else {
-        btns[i].classList.remove('active');
-      }
-      btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
-    }
-  }
-
-  function applyUiStyle(next, persist) {
-    document.documentElement.dataset.ui = next;
-    if (persist) {
-      try {
-        window.localStorage.setItem(UI_STORAGE_KEY, next);
-      } catch (e) { /* localStorage 不可用时保持内存态 */ }
-    }
-    syncSegButtons();
-    if (lastDevices.length) render(lastDevices, true);
   }
 
   // ---------------- 渲染 ----------------
@@ -1299,7 +1105,7 @@
     });
   }
 
-  // 行签名：行集合或在线状态变化时变了 → 重挂载 tbody（Apple 象限播一次 200ms 淡入）；
+  // 行签名：行集合或在线状态变化时变了 → 重挂载 tbody（播一次 200ms 淡入）；
   // 签名不变（常态 5s 轮询）只 patch 变化的单元格，不重挂载 → 键盘焦点与滚动位置都保住。
   var lastRowSig = null;
   var lastCount = null;      // 上次成功拉取到的设备数：骨架屏按它占位
@@ -1348,7 +1154,6 @@
   // 一行设备的数据模型：HTML 渲染与轮询 patch 共用，两条路径不会走偏
   function rowModel(d) {
     var isOnline = !!d.online;
-    var apple = currentUi() === 'apple';
     return {
       id: String(d.device_id || ''),
       online: isOnline,
@@ -1364,14 +1169,13 @@
       statusText: t(isOnline ? 'status.online' : 'status.offline'),
       detail: statusDetail(d),
       tip: statusTitle(d),
-      // 离线行不可达：链接标 aria-disabled 且不跳转（仅 Apple 象限，座舱交互原样）
-      disabledLink: apple && !isOnline
+      // 离线行不可达：链接标 aria-disabled 且不跳转
+      disabledLink: !isOnline
     };
   }
 
   function rowHtml(m) {
-    var apple = currentUi() === 'apple';
-    return '<tr class="' + (m.online ? '' : 'offline') + '"' + (apple ? ' tabindex="0"' : '') +
+    return '<tr class="' + (m.online ? '' : 'offline') + '" tabindex="0"' +
       ' data-device-id="' + esc(m.id) + '">' +
       '<td class="name" data-label="' + esc(t('table.name')) + '">' + esc(m.name) + '</td>' +
       '<td data-label="' + esc(t('table.type')) + '"' + (m.typeTitle ? ' title="' + esc(m.typeTitle) + '"' : '') + '>' + esc(m.typeLabel) + '</td>' +
@@ -1543,7 +1347,7 @@
     if (!btn) return;
     var target = btn.getAttribute('data-copy') || '';
     copyText(target).then(function () {
-      // 复制成功：按钮图标短暂变绿勾（Apple 象限可见），与 toast 同时出现
+      // 复制成功：按钮图标短暂变绿勾，与 toast 同时出现
       btn.classList.add('copied');
       window.setTimeout(function () { btn.classList.remove('copied'); }, 1200);
       showToast(t('copy.done', { target: target }));
@@ -1552,9 +1356,8 @@
     });
   });
 
-  // 整行点击跳对应控制台：仅 Apple 象限启用（座舱行交互保持原样）；
-  // 点在链接/按钮上、或正在划选文本时不触发；离线行不跳死链，只 toast 提示。
-  // 行补 tabindex="0" + Enter/Space 触发，键盘与指针同一套行为。
+  // 整行点击跳对应控制台：点在链接/按钮上、或正在划选文本时不触发；
+  // 离线行不跳死链，只 toast 提示。行带 tabindex="0" + Enter/Space 触发，键盘与指针同一套行为。
   function activateRow(row) {
     if (row.classList.contains('offline')) {
       showToast(t('toast.offline'));
@@ -1577,7 +1380,6 @@
   }
 
   resultsEl.addEventListener('click', function (event) {
-    if (currentUi() !== 'apple') return;
     if (!event.target.closest) return;
     // 离线行的 IP 链接标了 aria-disabled：拦住跳转，只给同一条离线提示
     if (event.target.closest('a[aria-disabled="true"]')) {
@@ -1596,7 +1398,6 @@
   });
 
   resultsEl.addEventListener('keydown', function (event) {
-    if (currentUi() !== 'apple') return;
     if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') return;
     var row = event.target.closest ? event.target.closest('tr') : null;
     if (!row || event.target !== row) return;   // 行自身获得焦点时才响应
@@ -1784,7 +1585,7 @@
     if (lastDevices.length) render(lastDevices, true);
   }
 
-  // 首屏骨架屏：仅 Apple 象限注入，等待首个 /devices 响应期间显示呼吸占位条。
+  // 首屏骨架屏：等待首个 /devices 响应期间注入，显示呼吸占位条。
   // 一是占住工具条 meta 行（否则 390 下面板会被文案换行挤下 18px），
   // 二是行数按上次拉到的设备数（本机记忆，首次按 3 台估），换来内容时不跳高度。
   function skelRowHtml() {
@@ -1796,7 +1597,6 @@
   }
 
   function showSkeleton() {
-    if (currentUi() !== 'apple') return;
     var known = lastCount === null ? readStoredDeviceCount() : lastCount;
     var n = known === null ? skelFallbackRows() : Math.min(6, Math.max(1, known));
     var rows = '';
@@ -1815,18 +1615,9 @@
     applyLanguage(lang === 'zh' ? 'en' : 'zh');
   });
 
-  uiSegEl.addEventListener('click', function (event) {
-    var btn = event.target.closest ? event.target.closest('.uiSegBtn') : null;
-    if (!btn) return;
-    var next = btn.getAttribute('data-ui-value');
-    if (next !== 'cockpit' && next !== 'apple') return;
-    applyUiStyle(next, true);
-  });
-
   searchBtn.addEventListener('click', function () { search(true); });
 
-  // 页头 hairline 随滚动浮现：顶部透明、滚离顶部 >2px 才描边（apple.com 同款；
-  // 样式规则仅 Apple 象限定，座舱象限加 .scrolled 类无视觉变化）。加载时先同步一次。
+  // 页头 hairline 随滚动浮现：顶部透明、滚离顶部 >2px 才描边（apple.com 同款）。加载时先同步一次。
   var headerRowEl = document.querySelector('.headerRow');
   function syncHeaderScrolled() {
     headerRowEl.classList.toggle('scrolled', window.scrollY > 2);
@@ -1834,7 +1625,6 @@
   window.addEventListener('scroll', syncHeaderScrolled, { passive: true });
   syncHeaderScrolled();
 
-  applyUiStyle(currentUi(), false);
   applyLanguage(lang);
   initPush();
   showSkeleton();

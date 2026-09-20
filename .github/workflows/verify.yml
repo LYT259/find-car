@@ -42,13 +42,13 @@ jobs:
           echo "主桩 8099 未就绪" >&2
           exit 1
 
-      - name: 主验证（17 项：截图矩阵 + 座舱对比 + 行为检查）
+      - name: 主验证
         env:
           FDC_CI: "1"
           NODE_PATH: /tmp/fdc-pw/node_modules
         run: node .verify/verify.js
 
-      - name: 补充验证（10 项）
+      - name: 补充验证
         env:
           FDC_CI: "1"
           NODE_PATH: /tmp/fdc-pw/node_modules
