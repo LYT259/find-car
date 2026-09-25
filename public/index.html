@@ -256,6 +256,12 @@
     letter-spacing: .04em;
     text-transform: uppercase;
   }
+  /* 局域网语义常驻提示：纯 meta 用 text-4 档（与 toolbarMeta 同款，对比度实算已覆盖该档） */
+  .lanHint {
+    margin: -4px 0 12px;
+    color: var(--text-4);
+    font-size: 12px;
+  }
   .banner {
     margin: 0 0 12px;
     padding: 10px 12px;
@@ -769,7 +775,7 @@
       </a>
       <h1><a class="titleLink" href="https://www.donkeydrift.com" target="_blank" rel="noopener">Find Donkey Car</a></h1>
       <div class="headerActions">
-        <span class="version" id="page-version">v1.6.0</span>
+        <span class="version" id="page-version">v1.6.1</span>
         <a class="ghLink" href="https://github.com/DonkeyDrift/DonkeyDrift" target="_blank" rel="noopener noreferrer"
            data-i18n-aria="aria.github" data-i18n-title="aria.github">
           <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
@@ -810,6 +816,7 @@
       <button class="btnPrimary" id="search-btn" type="button" data-i18n-aria="aria.refresh"><span class="btnSpin" aria-hidden="true"></span><span class="btnLabel"></span></button>
       <span class="toolbarMeta" id="updated"></span>
     </section>
+    <div class="lanHint" data-i18n="page.lanHint"></div>
 
     <div id="status" class="banner" hidden></div>
     <section id="results" class="panelCard"></section>
@@ -850,6 +857,7 @@
       'page.empty': '没有在线设备',
       'page.error': '网络错误',
       'page.errorService': '服务暂时不可用，请稍后重试',
+      'page.lanHint': 'IP 是局域网地址——只有你的浏览器与设备处于同一网络时链接才能打开；「在线」表示心跳正常，设备断电后数分钟内仍可能显示在线',
       'table.name': '名称',
       'table.type': '设备类型',
       'table.ip': '局域网 IP',
@@ -870,8 +878,8 @@
       'tip.dd': '系统：{os} · 主机型号：{model} · 主机名：{hostname} · DonkeyDrift 后端',
       'tip.lastHeartbeat': '最后心跳：{clock}（{ago}）',
       'tip.copyIp': '复制 IP',
-      'tip.open.esp32': '打开 Drifter Console',
-      'tip.open.dd': '打开 DonkeyDrifter',
+      'tip.open.esp32': '打开 Drifter Console（需与设备在同一局域网）',
+      'tip.open.dd': '打开 DonkeyDrifter（需与设备在同一局域网）',
       'copy.done': '已复制 {target}',
       'copy.fail': '复制失败，请手动选择',
       'toast.offline': '设备离线，控制台当前不可达',
@@ -896,6 +904,7 @@
       'page.empty': 'No devices online',
       'page.error': 'Network error',
       'page.errorService': 'Service unavailable, please try again',
+      'page.lanHint': 'IPs are LAN addresses — a link opens only when your browser is on the same network as the device; "Online" means a recent heartbeat, so a powered-off device may keep showing online for a few minutes',
       'table.name': 'Name',
       'table.type': 'Device type',
       'table.ip': 'LAN IP',
@@ -916,8 +925,8 @@
       'tip.dd': 'OS: {os} · Host model: {model} · Hostname: {hostname} · DonkeyDrifter backend',
       'tip.lastHeartbeat': 'Last heartbeat: {clock} ({ago})',
       'tip.copyIp': 'Copy IP',
-      'tip.open.esp32': 'Open Drifter Console',
-      'tip.open.dd': 'Open DonkeyDrifter',
+      'tip.open.esp32': 'Open Drifter Console (requires same network as the device)',
+      'tip.open.dd': 'Open DonkeyDrifter (requires same network as the device)',
       'copy.done': 'Copied {target}',
       'copy.fail': 'Copy failed, please select manually',
       'toast.offline': 'Device is offline; console is unreachable',

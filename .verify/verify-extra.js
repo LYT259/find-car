@@ -91,7 +91,12 @@ function check(name, ok, detail) {
     check('刷新完成后复位（文字回「刷新」）', !idle.cls && idle.label === '刷新', JSON.stringify(idle));
 
     const titles = await page.evaluate(() => Array.from(document.querySelectorAll('td.mono a')).map(a => a.title));
-    check('IP 链接带控制台悬停提示', titles[0] === '打开 Drifter Console' && titles[1] === '打开 DonkeyDrifter', JSON.stringify(titles));
+    check('IP 链接带控制台悬停提示', titles[0] === '打开 Drifter Console（需与设备在同一局域网）' && titles[1] === '打开 DonkeyDrifter（需与设备在同一局域网）', JSON.stringify(titles));
+    const hint = await page.evaluate(() => {
+      const el = document.querySelector('.lanHint');
+      return el ? { text: el.textContent, visible: el.offsetHeight > 0 } : null;
+    });
+    check('局域网语义常驻提示行渲染且本地化', !!hint && hint.visible && hint.text.indexOf('局域网') !== -1, JSON.stringify(hint));
     await ctx.close();
   }
 
