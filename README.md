@@ -2,7 +2,9 @@
 
 「一键找车」：ESP32 小车（Drifter Console）与 DonkeyDrifter 主机各自周期性把局域网信息
 上报到 Cloudflare Pages Functions，网页（<https://find-dkc.pages.dev/>）打开即列出
-设备及其局域网 IP，点 IP 直达对应控制台。**去 token、公开上报与查询。**
+设备及其局域网 IP，点 IP 直达对应控制台。**去 token、公开上报与查询；查询结果按
+「同一局域网」过滤（v1.7.0 起）——只显示与浏览器公网出口一致的设备（IPv4 比完整地址、
+IPv6 比 /64 前缀），别的网络下的设备互相不可见。**
 
 主机侧上报由**常驻 launcher 服务**（`donkeycar/launcher/server.py`，systemd 用户服务
 `donkeydrifter-launcher.service`）负责：只要开机就能被找到，不再依赖按需启动的 DD Web。
@@ -13,7 +15,8 @@ launcher 自身端口 8090（点 IP 落到 launcher 菜单页，可一键「打�
 
 - `functions/report.js` — Pages Function：`POST /report` 写 KV（设备「旧不在线 → 新在线」跳变时
   后台扇出 Web Push 上线提醒，见「协议」推送小节）
-- `functions/devices.js` — Pages Function：`GET /devices` 读 KV 列出设备
+- `functions/devices.js` — Pages Function：`GET /devices` 读 KV 列出设备，并按「同一局域网」
+  过滤（仅返回与查询方公网出口一致的设备，见「协议」小节）
 - `functions/push/` — Pages Function：Web Push 端点（`key.js` VAPID 公钥 / `subscribe.js` 订阅（成功即回发
   欢迎 tickle，当场证明推送链路可用）/ `unsubscribe.js` 退订；`_vapid.js` 为 report.js 与 subscribe.js
   共用的 VAPID 签名 + tickle 发送模块，下划线前缀不成路由）
@@ -125,13 +128,13 @@ npx wrangler pages deploy public --project-name find-dkc
 - **页头**：左侧 32px 圆角 logo（同一张 helmet logo，点进官网）+ 标题；右侧页面版本徽标、
   GitHub 图标链接、上线提醒铃铛圆钮（32px，Web Push 订阅开关）、深浅色圆钮（32px）、语言圆钮
   （32px，显示 `中` / `EN`）。版本徽标样式同 DD
-  `VersionBadge` / DC `.version`，当前 `v1.6.0`；改动本页时同步递增 `index.html` 里的 `#page-version`。
+  `VersionBadge` / DC `.version`，当前 `v1.7.0`；改动本页时同步递增 `index.html` 里的 `#page-version`。
 - **深浅色**：默认跟随系统 `prefers-color-scheme`（首屏内联脚本防闪烁），手动切换只在当前页面
   视图内生效（不持久化），刷新后重新跟随系统——与 DD `ThemeSwitcher` / DC `themeButton` 一致。
 - **语言**：`zh` / `en` 全量词条，首次访问跟随浏览器语言（`zh*` → 中文，其余英文），手动切换写入
   `localStorage['findcar.ui.lang']`（DD 为 `donkeydrifter.ui.lang`、DC 为 `mus4.ui.lang`，同命名惯例），
   并同步 `<html lang>` 与 `<html data-theme>`。
-- **列表文案**：`设备类型` 列显示人能看懂的身份——ESP32 设备显示「ESP32 小车」，DD 后端显示
+- **列表文案**：`设备类型` 列显示人能看懂的身份——ESP32 设备显示「ESP32」（v1.6.2 起，不再带「小车」），DD 后端显示
   「<系统> 主机」（如「Ubuntu 26.04 LTS 主机」）；主板型号（如 ADL-N）只出现在悬停提示里。
   状态列：心跳仍在正常上报周期内显示「刚刚」，超出周期才显示「N 分钟未上报」，离线显示「N 分钟前」。
   **页面不放解释性小字**：连最后一句 lead 操作指引（「点局域网 IP 直达对应控制台。」）也已删除
@@ -166,7 +169,8 @@ npx wrangler pages deploy public --project-name find-dkc
    "state":"online|offline"}
   ```
 
-  写 KV：键 `dev:<device_id>`，值 = 上述字段（另附 `last_seen_epoch_ms`）。
+  写 KV：键 `dev:<device_id>`，值 = 上述字段（另附 `last_seen_epoch_ms` 与
+  `egress_ip`=上报方出口 IP——后者只用于 `/devices` 同局域网匹配，从不出现在响应里）。
   `state` 省略即 `online`；`offline` 由 launcher 服务关停（systemctl stop / 关机）
   时发一次，查询端立即显示「离线」。TTL：`online` 900 秒、`offline` 600 秒。
   成功返回 200 `{"ok":true}`。
@@ -178,6 +182,13 @@ npx wrangler pages deploy public --project-name find-dkc
    "version":"...","model":"ADL-N","os":"Ubuntu 26.04 LTS","state":"online",
    "last_seen_epoch_ms":1720000000000,"online":true}]}
   ```
+
+  同局域网过滤（v1.7.0 起）：只返回 `egress_ip` 与查询方公网出口一致的设备——IPv4 比完整
+  地址（同一 NAT 后），IPv6 比 /64 前缀（同一家庭前缀，隐私地址只变后 64 位）。查询方出口
+  取 `CF-Connecting-IP`；浏览器经 IPv6 访问时服务端看不到其 v4 出口，由页面经纯 IPv4 探测
+  服务（ipv4.icanhazip.com → ipv4.wtfismyip.com）拿到后随 `?v4=<ip>` 带上（仅对 IPv6
+  客户端有意义，可伪造，属尽力过滤、不是鉴权）。缺 `egress_ip` 的旧记录在下一轮心跳补齐前
+  保持可见，避免全量闪空。
 
   在线判定：`state !== "offline"` 且 `Date.now() - last_seen_epoch_ms <` 该类型的在线窗口
   （`dd` 5.5 分钟、`esp32` 8 分钟，均大于各自心跳间隔，容忍漏跳一次）。

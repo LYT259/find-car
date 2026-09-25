@@ -114,6 +114,9 @@ export async function onRequestPost({ request, env, waitUntil }) {
     model: text(body.model),
     os: text(body.os),
     state,
+    // 上报方出口 IP（Cloudflare 注入，可信）：/devices 按它做「同一出口 ≈ 同一局域网」过滤，
+    // 只在服务端参与匹配，绝不出现在 /devices 响应里
+    egress_ip: (request.headers.get('CF-Connecting-IP') || '').slice(0, 45),
     last_seen_epoch_ms: now,
   };
 

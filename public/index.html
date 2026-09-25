@@ -769,7 +769,7 @@
       </a>
       <h1><a class="titleLink" href="https://www.donkeydrift.com" target="_blank" rel="noopener">Find Donkey Car</a></h1>
       <div class="headerActions">
-        <span class="version" id="page-version">v1.6.2</span>
+        <span class="version" id="page-version">v1.7.0</span>
         <a class="ghLink" href="https://github.com/DonkeyDrift/DonkeyDrift" target="_blank" rel="noopener noreferrer"
            data-i18n-aria="aria.github" data-i18n-title="aria.github">
           <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
@@ -1521,11 +1521,40 @@
   // ---------------- 数据拉取 ----------------
   var lastDevices = [];
 
+  // 同一局域网过滤（v1.7.0 起）：/devices 只返回「公网出口与查询方一致」的设备。
+  // 浏览器经 IPv6 访问时服务端看不到其 v4 出口，需先经纯 IPv4 探测服务拿到再随 ?v4= 带上；
+  // 探测失败保持空串、按无参数查询，下轮轮询自动重试。本机调试（127.0.0.1/localhost）跳过探测，
+  // 避免对本地验证桩引入外网依赖。
+  var clientV4 = '';
+  function detectClientV4() {
+    var host = window.location.hostname;
+    if (host === '127.0.0.1' || host === 'localhost') return Promise.resolve('');
+    var sources = ['https://ipv4.icanhazip.com/', 'https://ipv4.wtfismyip.com/text'];
+    var attempt = function (i) {
+      if (i >= sources.length) return Promise.resolve('');
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 2500);
+      return fetch(sources[i], { cache: 'no-store', signal: ctrl.signal })
+        .then(function (resp) { return resp.ok ? resp.text() : ''; })
+        .then(function (ip) {
+          clearTimeout(timer);
+          ip = String(ip || '').trim();
+          return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip) ? ip : attempt(i + 1);
+        })
+        .catch(function () { clearTimeout(timer); return attempt(i + 1); });
+    };
+    return attempt(0);
+  }
+
   function search(isManual) {
     hideStatus();
     if (isManual) setLoading(true);
 
-    fetch('/devices', { cache: 'no-store' })
+    // 已拿到 v4 出口就直接查；否则先探测（本地环境立即返回空串，不引入延迟）
+    var ready = clientV4 ? Promise.resolve('') : detectClientV4().then(function (ip) { clientV4 = ip; });
+    ready.then(function () {
+      return fetch('/devices' + (clientV4 ? '?v4=' + clientV4 : ''), { cache: 'no-store' });
+    })
       .then(function (resp) {
         return resp.json().then(function (data) {
           if (!resp.ok) {
